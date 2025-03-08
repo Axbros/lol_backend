@@ -1,0 +1,1727 @@
+{
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "http server api docs",
+        "title": "lol api docs",
+        "contact": {},
+        "version": "2.0"
+    },
+    "host": "localhost:8080",
+    "paths": {
+        "/api/v1/loan": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "submit information to create loan",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "loan"
+                ],
+                "summary": "create loan",
+                "parameters": [
+                    {
+                        "description": "loan information",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateLoanRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateLoanReply"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/loan/list": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "list of loans by paging and conditions",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "loan"
+                ],
+                "summary": "list of loans by query parameters",
+                "parameters": [
+                    {
+                        "description": "query parameters",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.Params"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.ListLoansReply"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/loan/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get loan detail by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "loan"
+                ],
+                "summary": "get loan detail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.GetLoanByIDReply"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "update loan information by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "loan"
+                ],
+                "summary": "update loan",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "loan information",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateLoanByIDRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateLoanByIDReply"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "delete loan by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "loan"
+                ],
+                "summary": "delete loan",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.DeleteLoanByIDReply"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/paymentHistory": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "submit information to create paymentHistory",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "paymentHistory"
+                ],
+                "summary": "create paymentHistory",
+                "parameters": [
+                    {
+                        "description": "paymentHistory information",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreatePaymentHistoryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.CreatePaymentHistoryReply"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/paymentHistory/list": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "list of paymentHistorys by paging and conditions",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "paymentHistory"
+                ],
+                "summary": "list of paymentHistorys by query parameters",
+                "parameters": [
+                    {
+                        "description": "query parameters",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.Params"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.ListPaymentHistorysReply"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/paymentHistory/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get paymentHistory detail by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "paymentHistory"
+                ],
+                "summary": "get paymentHistory detail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.GetPaymentHistoryByIDReply"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "update paymentHistory information by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "paymentHistory"
+                ],
+                "summary": "update paymentHistory",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "paymentHistory information",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdatePaymentHistoryByIDRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdatePaymentHistoryByIDReply"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "delete paymentHistory by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "paymentHistory"
+                ],
+                "summary": "delete paymentHistory",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.DeletePaymentHistoryByIDReply"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/result": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "submit information to create result",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "result"
+                ],
+                "summary": "create result",
+                "parameters": [
+                    {
+                        "description": "result information",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateResultRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateResultReply"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/result/list": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "list of results by paging and conditions",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "result"
+                ],
+                "summary": "list of results by query parameters",
+                "parameters": [
+                    {
+                        "description": "query parameters",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.Params"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.ListResultsReply"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/result/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get result detail by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "result"
+                ],
+                "summary": "get result detail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.GetResultByIDReply"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "update result information by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "result"
+                ],
+                "summary": "update result",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "result information",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateResultByIDRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateResultByIDReply"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "delete result by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "result"
+                ],
+                "summary": "delete result",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.DeleteResultByIDReply"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/smsHistory": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "submit information to create smsHistory",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smsHistory"
+                ],
+                "summary": "create smsHistory",
+                "parameters": [
+                    {
+                        "description": "smsHistory information",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateSmsHistoryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateSmsHistoryReply"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/smsHistory/list": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "list of smsHistorys by paging and conditions",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smsHistory"
+                ],
+                "summary": "list of smsHistorys by query parameters",
+                "parameters": [
+                    {
+                        "description": "query parameters",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.Params"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.ListSmsHistorysReply"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/smsHistory/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get smsHistory detail by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smsHistory"
+                ],
+                "summary": "get smsHistory detail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.GetSmsHistoryByIDReply"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "update smsHistory information by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smsHistory"
+                ],
+                "summary": "update smsHistory",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "smsHistory information",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateSmsHistoryByIDRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateSmsHistoryByIDReply"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "delete smsHistory by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smsHistory"
+                ],
+                "summary": "delete smsHistory",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.DeleteSmsHistoryByIDReply"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "types.Column": {
+            "type": "object",
+            "properties": {
+                "exp": {
+                    "description": "expressions, which default to = when the value is null, have =, !=, \u003e, \u003e=, \u003c, \u003c=, like",
+                    "type": "string"
+                },
+                "logic": {
+                    "description": "logical type, default value is \"and\", support \u0026, and, ||, or",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "column name",
+                    "type": "string"
+                },
+                "value": {
+                    "description": "column value"
+                }
+            }
+        },
+        "types.CreateLoanReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data",
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "description": "id",
+                            "type": "integer"
+                        }
+                    }
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.CreateLoanRequest": {
+            "type": "object",
+            "properties": {
+                "carModel": {
+                    "description": "车型",
+                    "type": "string"
+                },
+                "carPlate": {
+                    "description": "车牌",
+                    "type": "string"
+                },
+                "createAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "loanMoney": {
+                    "description": "借款金额",
+                    "type": "number"
+                },
+                "loanPeriod": {
+                    "description": "借款期数",
+                    "type": "integer"
+                },
+                "loanReturnDate": {
+                    "description": "还款日期",
+                    "type": "string"
+                },
+                "mobile": {
+                    "description": "手机号码",
+                    "type": "string"
+                },
+                "monthlyPayment": {
+                    "description": "每月应还",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "姓名",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "状态",
+                    "type": "string"
+                },
+                "userID": {
+                    "description": "身份证号码",
+                    "type": "string"
+                }
+            }
+        },
+        "types.CreatePaymentHistoryReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data",
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "description": "id",
+                            "type": "integer"
+                        }
+                    }
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.CreatePaymentHistoryRequest": {
+            "type": "object",
+            "properties": {
+                "createAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "outTradeNo": {
+                    "description": "支付订单号",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "状态",
+                    "type": "string"
+                },
+                "userPhone": {
+                    "description": "用户手机号码",
+                    "type": "string"
+                }
+            }
+        },
+        "types.CreateResultReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data",
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "description": "id",
+                            "type": "integer"
+                        }
+                    }
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.CreateResultRequest": {
+            "type": "object",
+            "properties": {
+                "amountTotal": {
+                    "description": "合计",
+                    "type": "number"
+                },
+                "attach": {
+                    "type": "string"
+                },
+                "bankType": {
+                    "description": "银行类型",
+                    "type": "string"
+                },
+                "createAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "eventType": {
+                    "description": "事件类型",
+                    "type": "string"
+                },
+                "outTradeNo": {
+                    "description": "订单号",
+                    "type": "string"
+                },
+                "payer": {
+                    "description": "支付人",
+                    "type": "string"
+                },
+                "resourceAppid": {
+                    "description": "来源ID",
+                    "type": "string"
+                },
+                "resourceMchid": {
+                    "description": "来源商户ID",
+                    "type": "string"
+                },
+                "successTime": {
+                    "description": "成功时间",
+                    "type": "string"
+                },
+                "tradeState": {
+                    "description": "交易状态",
+                    "type": "string"
+                },
+                "tradeStateDesc": {
+                    "description": "交易状态描述",
+                    "type": "string"
+                },
+                "tradeType": {
+                    "description": "交易类型",
+                    "type": "string"
+                },
+                "transactionID": {
+                    "description": "交易ID",
+                    "type": "string"
+                }
+            }
+        },
+        "types.CreateSmsHistoryReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data",
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "description": "id",
+                            "type": "integer"
+                        }
+                    }
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.CreateSmsHistoryRequest": {
+            "type": "object",
+            "properties": {
+                "createAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "mobile": {
+                    "description": "手机号",
+                    "type": "string"
+                },
+                "userName": {
+                    "description": "收信人",
+                    "type": "string"
+                }
+            }
+        },
+        "types.DeleteLoanByIDReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data"
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.DeletePaymentHistoryByIDReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data"
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.DeleteResultByIDReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data"
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.DeleteSmsHistoryByIDReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data"
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.GetLoanByIDReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data",
+                    "type": "object",
+                    "properties": {
+                        "loan": {
+                            "$ref": "#/definitions/types.LoanObjDetail"
+                        }
+                    }
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.GetPaymentHistoryByIDReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data",
+                    "type": "object",
+                    "properties": {
+                        "paymentHistory": {
+                            "$ref": "#/definitions/types.PaymentHistoryObjDetail"
+                        }
+                    }
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.GetResultByIDReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data",
+                    "type": "object",
+                    "properties": {
+                        "result": {
+                            "$ref": "#/definitions/types.ResultObjDetail"
+                        }
+                    }
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.GetSmsHistoryByIDReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data",
+                    "type": "object",
+                    "properties": {
+                        "smsHistory": {
+                            "$ref": "#/definitions/types.SmsHistoryObjDetail"
+                        }
+                    }
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.ListLoansReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data",
+                    "type": "object",
+                    "properties": {
+                        "loans": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.LoanObjDetail"
+                            }
+                        }
+                    }
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.ListPaymentHistorysReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data",
+                    "type": "object",
+                    "properties": {
+                        "paymentHistorys": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.PaymentHistoryObjDetail"
+                            }
+                        }
+                    }
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.ListResultsReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data",
+                    "type": "object",
+                    "properties": {
+                        "results": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.ResultObjDetail"
+                            }
+                        }
+                    }
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.ListSmsHistorysReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data",
+                    "type": "object",
+                    "properties": {
+                        "smsHistorys": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.SmsHistoryObjDetail"
+                            }
+                        }
+                    }
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.LoanObjDetail": {
+            "type": "object",
+            "properties": {
+                "carModel": {
+                    "description": "车型",
+                    "type": "string"
+                },
+                "carPlate": {
+                    "description": "车牌",
+                    "type": "string"
+                },
+                "createAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "convert to uint64 id",
+                    "type": "integer"
+                },
+                "loanMoney": {
+                    "description": "借款金额",
+                    "type": "number"
+                },
+                "loanPeriod": {
+                    "description": "借款期数",
+                    "type": "integer"
+                },
+                "loanReturnDate": {
+                    "description": "还款日期",
+                    "type": "string"
+                },
+                "mobile": {
+                    "description": "手机号码",
+                    "type": "string"
+                },
+                "monthlyPayment": {
+                    "description": "每月应还",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "序号",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "状态",
+                    "type": "string"
+                },
+                "userID": {
+                    "description": "身份证号码",
+                    "type": "string"
+                }
+            }
+        },
+        "types.Params": {
+            "type": "object",
+            "properties": {
+                "columns": {
+                    "description": "query conditions",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.Column"
+                    }
+                },
+                "limit": {
+                    "description": "lines per page",
+                    "type": "integer"
+                },
+                "page": {
+                    "description": "page number, starting from page 0",
+                    "type": "integer"
+                },
+                "sort": {
+                    "description": "sorted fields, multi-column sorting separated by commas",
+                    "type": "string"
+                }
+            }
+        },
+        "types.PaymentHistoryObjDetail": {
+            "type": "object",
+            "properties": {
+                "createAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "convert to uint64 id",
+                    "type": "integer"
+                },
+                "outTradeNo": {
+                    "description": "支付订单号",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "状态",
+                    "type": "string"
+                },
+                "userPhone": {
+                    "description": "序号",
+                    "type": "string"
+                }
+            }
+        },
+        "types.ResultObjDetail": {
+            "type": "object",
+            "properties": {
+                "amountTotal": {
+                    "description": "合计",
+                    "type": "number"
+                },
+                "attach": {
+                    "type": "string"
+                },
+                "bankType": {
+                    "description": "银行类型",
+                    "type": "string"
+                },
+                "createAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "eventType": {
+                    "description": "序号",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "convert to uint64 id",
+                    "type": "integer"
+                },
+                "outTradeNo": {
+                    "description": "订单号",
+                    "type": "string"
+                },
+                "payer": {
+                    "description": "支付人",
+                    "type": "string"
+                },
+                "resourceAppid": {
+                    "description": "来源ID",
+                    "type": "string"
+                },
+                "resourceMchid": {
+                    "description": "来源商户ID",
+                    "type": "string"
+                },
+                "successTime": {
+                    "description": "成功时间",
+                    "type": "string"
+                },
+                "tradeState": {
+                    "description": "交易状态",
+                    "type": "string"
+                },
+                "tradeStateDesc": {
+                    "description": "交易状态描述",
+                    "type": "string"
+                },
+                "tradeType": {
+                    "description": "交易类型",
+                    "type": "string"
+                },
+                "transactionID": {
+                    "description": "交易ID",
+                    "type": "string"
+                }
+            }
+        },
+        "types.SmsHistoryObjDetail": {
+            "type": "object",
+            "properties": {
+                "createAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "convert to uint64 id",
+                    "type": "integer"
+                },
+                "mobile": {
+                    "description": "手机号",
+                    "type": "string"
+                },
+                "userName": {
+                    "description": "序号",
+                    "type": "string"
+                }
+            }
+        },
+        "types.UpdateLoanByIDReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data"
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.UpdateLoanByIDRequest": {
+            "type": "object",
+            "properties": {
+                "carModel": {
+                    "description": "车型",
+                    "type": "string"
+                },
+                "carPlate": {
+                    "description": "车牌",
+                    "type": "string"
+                },
+                "createAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "uint64 id",
+                    "type": "integer"
+                },
+                "loanMoney": {
+                    "description": "借款金额",
+                    "type": "number"
+                },
+                "loanPeriod": {
+                    "description": "借款期数",
+                    "type": "integer"
+                },
+                "loanReturnDate": {
+                    "description": "还款日期",
+                    "type": "string"
+                },
+                "mobile": {
+                    "description": "手机号码",
+                    "type": "string"
+                },
+                "monthlyPayment": {
+                    "description": "每月应还",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "序号",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "状态",
+                    "type": "string"
+                },
+                "userID": {
+                    "description": "身份证号码",
+                    "type": "string"
+                }
+            }
+        },
+        "types.UpdatePaymentHistoryByIDReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data"
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.UpdatePaymentHistoryByIDRequest": {
+            "type": "object",
+            "properties": {
+                "createAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "uint64 id",
+                    "type": "integer"
+                },
+                "outTradeNo": {
+                    "description": "支付订单号",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "状态",
+                    "type": "string"
+                },
+                "userPhone": {
+                    "description": "序号",
+                    "type": "string"
+                }
+            }
+        },
+        "types.UpdateResultByIDReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data"
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.UpdateResultByIDRequest": {
+            "type": "object",
+            "properties": {
+                "amountTotal": {
+                    "description": "合计",
+                    "type": "number"
+                },
+                "attach": {
+                    "type": "string"
+                },
+                "bankType": {
+                    "description": "银行类型",
+                    "type": "string"
+                },
+                "createAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "eventType": {
+                    "description": "序号",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "uint64 id",
+                    "type": "integer"
+                },
+                "outTradeNo": {
+                    "description": "订单号",
+                    "type": "string"
+                },
+                "payer": {
+                    "description": "支付人",
+                    "type": "string"
+                },
+                "resourceAppid": {
+                    "description": "来源ID",
+                    "type": "string"
+                },
+                "resourceMchid": {
+                    "description": "来源商户ID",
+                    "type": "string"
+                },
+                "successTime": {
+                    "description": "成功时间",
+                    "type": "string"
+                },
+                "tradeState": {
+                    "description": "交易状态",
+                    "type": "string"
+                },
+                "tradeStateDesc": {
+                    "description": "交易状态描述",
+                    "type": "string"
+                },
+                "tradeType": {
+                    "description": "交易类型",
+                    "type": "string"
+                },
+                "transactionID": {
+                    "description": "交易ID",
+                    "type": "string"
+                }
+            }
+        },
+        "types.UpdateSmsHistoryByIDReply": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "return code",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "return data"
+                },
+                "msg": {
+                    "description": "return information description",
+                    "type": "string"
+                }
+            }
+        },
+        "types.UpdateSmsHistoryByIDRequest": {
+            "type": "object",
+            "properties": {
+                "createAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "uint64 id",
+                    "type": "integer"
+                },
+                "mobile": {
+                    "description": "手机号",
+                    "type": "string"
+                },
+                "userName": {
+                    "description": "序号",
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type Bearer your-jwt-token to Value",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

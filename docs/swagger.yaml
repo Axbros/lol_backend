@@ -1,0 +1,1159 @@
+definitions:
+  types.Column:
+    properties:
+      exp:
+        description: expressions, which default to = when the value is null, have
+          =, !=, >, >=, <, <=, like
+        type: string
+      logic:
+        description: logical type, default value is "and", support &, and, ||, or
+        type: string
+      name:
+        description: column name
+        type: string
+      value:
+        description: column value
+    type: object
+  types.CreateLoanReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+        properties:
+          id:
+            description: id
+            type: integer
+        type: object
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.CreateLoanRequest:
+    properties:
+      carModel:
+        description: 车型
+        type: string
+      carPlate:
+        description: 车牌
+        type: string
+      createAt:
+        description: 创建时间
+        type: string
+      loanMoney:
+        description: 借款金额
+        type: number
+      loanPeriod:
+        description: 借款期数
+        type: integer
+      loanReturnDate:
+        description: 还款日期
+        type: string
+      mobile:
+        description: 手机号码
+        type: string
+      monthlyPayment:
+        description: 每月应还
+        type: integer
+      name:
+        description: 姓名
+        type: string
+      status:
+        description: 状态
+        type: string
+      userID:
+        description: 身份证号码
+        type: string
+    type: object
+  types.CreatePaymentHistoryReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+        properties:
+          id:
+            description: id
+            type: integer
+        type: object
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.CreatePaymentHistoryRequest:
+    properties:
+      createAt:
+        description: 创建时间
+        type: string
+      outTradeNo:
+        description: 支付订单号
+        type: string
+      status:
+        description: 状态
+        type: string
+      userPhone:
+        description: 用户手机号码
+        type: string
+    type: object
+  types.CreateResultReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+        properties:
+          id:
+            description: id
+            type: integer
+        type: object
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.CreateResultRequest:
+    properties:
+      amountTotal:
+        description: 合计
+        type: number
+      attach:
+        type: string
+      bankType:
+        description: 银行类型
+        type: string
+      createAt:
+        description: 创建时间
+        type: string
+      eventType:
+        description: 事件类型
+        type: string
+      outTradeNo:
+        description: 订单号
+        type: string
+      payer:
+        description: 支付人
+        type: string
+      resourceAppid:
+        description: 来源ID
+        type: string
+      resourceMchid:
+        description: 来源商户ID
+        type: string
+      successTime:
+        description: 成功时间
+        type: string
+      tradeState:
+        description: 交易状态
+        type: string
+      tradeStateDesc:
+        description: 交易状态描述
+        type: string
+      tradeType:
+        description: 交易类型
+        type: string
+      transactionID:
+        description: 交易ID
+        type: string
+    type: object
+  types.CreateSmsHistoryReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+        properties:
+          id:
+            description: id
+            type: integer
+        type: object
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.CreateSmsHistoryRequest:
+    properties:
+      createAt:
+        description: 创建时间
+        type: string
+      mobile:
+        description: 手机号
+        type: string
+      userName:
+        description: 收信人
+        type: string
+    type: object
+  types.DeleteLoanByIDReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.DeletePaymentHistoryByIDReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.DeleteResultByIDReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.DeleteSmsHistoryByIDReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.GetLoanByIDReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+        properties:
+          loan:
+            $ref: '#/definitions/types.LoanObjDetail'
+        type: object
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.GetPaymentHistoryByIDReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+        properties:
+          paymentHistory:
+            $ref: '#/definitions/types.PaymentHistoryObjDetail'
+        type: object
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.GetResultByIDReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+        properties:
+          result:
+            $ref: '#/definitions/types.ResultObjDetail'
+        type: object
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.GetSmsHistoryByIDReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+        properties:
+          smsHistory:
+            $ref: '#/definitions/types.SmsHistoryObjDetail'
+        type: object
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.ListLoansReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+        properties:
+          loans:
+            items:
+              $ref: '#/definitions/types.LoanObjDetail'
+            type: array
+        type: object
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.ListPaymentHistorysReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+        properties:
+          paymentHistorys:
+            items:
+              $ref: '#/definitions/types.PaymentHistoryObjDetail'
+            type: array
+        type: object
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.ListResultsReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+        properties:
+          results:
+            items:
+              $ref: '#/definitions/types.ResultObjDetail'
+            type: array
+        type: object
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.ListSmsHistorysReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+        properties:
+          smsHistorys:
+            items:
+              $ref: '#/definitions/types.SmsHistoryObjDetail'
+            type: array
+        type: object
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.LoanObjDetail:
+    properties:
+      carModel:
+        description: 车型
+        type: string
+      carPlate:
+        description: 车牌
+        type: string
+      createAt:
+        description: 创建时间
+        type: string
+      id:
+        description: convert to uint64 id
+        type: integer
+      loanMoney:
+        description: 借款金额
+        type: number
+      loanPeriod:
+        description: 借款期数
+        type: integer
+      loanReturnDate:
+        description: 还款日期
+        type: string
+      mobile:
+        description: 手机号码
+        type: string
+      monthlyPayment:
+        description: 每月应还
+        type: integer
+      name:
+        description: 序号
+        type: string
+      status:
+        description: 状态
+        type: string
+      userID:
+        description: 身份证号码
+        type: string
+    type: object
+  types.Params:
+    properties:
+      columns:
+        description: query conditions
+        items:
+          $ref: '#/definitions/types.Column'
+        type: array
+      limit:
+        description: lines per page
+        type: integer
+      page:
+        description: page number, starting from page 0
+        type: integer
+      sort:
+        description: sorted fields, multi-column sorting separated by commas
+        type: string
+    type: object
+  types.PaymentHistoryObjDetail:
+    properties:
+      createAt:
+        description: 创建时间
+        type: string
+      id:
+        description: convert to uint64 id
+        type: integer
+      outTradeNo:
+        description: 支付订单号
+        type: string
+      status:
+        description: 状态
+        type: string
+      userPhone:
+        description: 序号
+        type: string
+    type: object
+  types.ResultObjDetail:
+    properties:
+      amountTotal:
+        description: 合计
+        type: number
+      attach:
+        type: string
+      bankType:
+        description: 银行类型
+        type: string
+      createAt:
+        description: 创建时间
+        type: string
+      eventType:
+        description: 序号
+        type: string
+      id:
+        description: convert to uint64 id
+        type: integer
+      outTradeNo:
+        description: 订单号
+        type: string
+      payer:
+        description: 支付人
+        type: string
+      resourceAppid:
+        description: 来源ID
+        type: string
+      resourceMchid:
+        description: 来源商户ID
+        type: string
+      successTime:
+        description: 成功时间
+        type: string
+      tradeState:
+        description: 交易状态
+        type: string
+      tradeStateDesc:
+        description: 交易状态描述
+        type: string
+      tradeType:
+        description: 交易类型
+        type: string
+      transactionID:
+        description: 交易ID
+        type: string
+    type: object
+  types.SmsHistoryObjDetail:
+    properties:
+      createAt:
+        description: 创建时间
+        type: string
+      id:
+        description: convert to uint64 id
+        type: integer
+      mobile:
+        description: 手机号
+        type: string
+      userName:
+        description: 序号
+        type: string
+    type: object
+  types.UpdateLoanByIDReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.UpdateLoanByIDRequest:
+    properties:
+      carModel:
+        description: 车型
+        type: string
+      carPlate:
+        description: 车牌
+        type: string
+      createAt:
+        description: 创建时间
+        type: string
+      id:
+        description: uint64 id
+        type: integer
+      loanMoney:
+        description: 借款金额
+        type: number
+      loanPeriod:
+        description: 借款期数
+        type: integer
+      loanReturnDate:
+        description: 还款日期
+        type: string
+      mobile:
+        description: 手机号码
+        type: string
+      monthlyPayment:
+        description: 每月应还
+        type: integer
+      name:
+        description: 序号
+        type: string
+      status:
+        description: 状态
+        type: string
+      userID:
+        description: 身份证号码
+        type: string
+    type: object
+  types.UpdatePaymentHistoryByIDReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.UpdatePaymentHistoryByIDRequest:
+    properties:
+      createAt:
+        description: 创建时间
+        type: string
+      id:
+        description: uint64 id
+        type: integer
+      outTradeNo:
+        description: 支付订单号
+        type: string
+      status:
+        description: 状态
+        type: string
+      userPhone:
+        description: 序号
+        type: string
+    type: object
+  types.UpdateResultByIDReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.UpdateResultByIDRequest:
+    properties:
+      amountTotal:
+        description: 合计
+        type: number
+      attach:
+        type: string
+      bankType:
+        description: 银行类型
+        type: string
+      createAt:
+        description: 创建时间
+        type: string
+      eventType:
+        description: 序号
+        type: string
+      id:
+        description: uint64 id
+        type: integer
+      outTradeNo:
+        description: 订单号
+        type: string
+      payer:
+        description: 支付人
+        type: string
+      resourceAppid:
+        description: 来源ID
+        type: string
+      resourceMchid:
+        description: 来源商户ID
+        type: string
+      successTime:
+        description: 成功时间
+        type: string
+      tradeState:
+        description: 交易状态
+        type: string
+      tradeStateDesc:
+        description: 交易状态描述
+        type: string
+      tradeType:
+        description: 交易类型
+        type: string
+      transactionID:
+        description: 交易ID
+        type: string
+    type: object
+  types.UpdateSmsHistoryByIDReply:
+    properties:
+      code:
+        description: return code
+        type: integer
+      data:
+        description: return data
+      msg:
+        description: return information description
+        type: string
+    type: object
+  types.UpdateSmsHistoryByIDRequest:
+    properties:
+      createAt:
+        description: 创建时间
+        type: string
+      id:
+        description: uint64 id
+        type: integer
+      mobile:
+        description: 手机号
+        type: string
+      userName:
+        description: 序号
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: http server api docs
+  title: lol api docs
+  version: "2.0"
+paths:
+  /api/v1/loan:
+    post:
+      consumes:
+      - application/json
+      description: submit information to create loan
+      parameters:
+      - description: loan information
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateLoanRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.CreateLoanReply'
+      security:
+      - BearerAuth: []
+      summary: create loan
+      tags:
+      - loan
+  /api/v1/loan/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: delete loan by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.DeleteLoanByIDReply'
+      security:
+      - BearerAuth: []
+      summary: delete loan
+      tags:
+      - loan
+    get:
+      consumes:
+      - application/json
+      description: get loan detail by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetLoanByIDReply'
+      security:
+      - BearerAuth: []
+      summary: get loan detail
+      tags:
+      - loan
+    put:
+      consumes:
+      - application/json
+      description: update loan information by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: loan information
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateLoanByIDRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.UpdateLoanByIDReply'
+      security:
+      - BearerAuth: []
+      summary: update loan
+      tags:
+      - loan
+  /api/v1/loan/list:
+    post:
+      consumes:
+      - application/json
+      description: list of loans by paging and conditions
+      parameters:
+      - description: query parameters
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/types.Params'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ListLoansReply'
+      security:
+      - BearerAuth: []
+      summary: list of loans by query parameters
+      tags:
+      - loan
+  /api/v1/paymentHistory:
+    post:
+      consumes:
+      - application/json
+      description: submit information to create paymentHistory
+      parameters:
+      - description: paymentHistory information
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreatePaymentHistoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.CreatePaymentHistoryReply'
+      security:
+      - BearerAuth: []
+      summary: create paymentHistory
+      tags:
+      - paymentHistory
+  /api/v1/paymentHistory/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: delete paymentHistory by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.DeletePaymentHistoryByIDReply'
+      security:
+      - BearerAuth: []
+      summary: delete paymentHistory
+      tags:
+      - paymentHistory
+    get:
+      consumes:
+      - application/json
+      description: get paymentHistory detail by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetPaymentHistoryByIDReply'
+      security:
+      - BearerAuth: []
+      summary: get paymentHistory detail
+      tags:
+      - paymentHistory
+    put:
+      consumes:
+      - application/json
+      description: update paymentHistory information by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: paymentHistory information
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdatePaymentHistoryByIDRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.UpdatePaymentHistoryByIDReply'
+      security:
+      - BearerAuth: []
+      summary: update paymentHistory
+      tags:
+      - paymentHistory
+  /api/v1/paymentHistory/list:
+    post:
+      consumes:
+      - application/json
+      description: list of paymentHistorys by paging and conditions
+      parameters:
+      - description: query parameters
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/types.Params'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ListPaymentHistorysReply'
+      security:
+      - BearerAuth: []
+      summary: list of paymentHistorys by query parameters
+      tags:
+      - paymentHistory
+  /api/v1/result:
+    post:
+      consumes:
+      - application/json
+      description: submit information to create result
+      parameters:
+      - description: result information
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateResultRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.CreateResultReply'
+      security:
+      - BearerAuth: []
+      summary: create result
+      tags:
+      - result
+  /api/v1/result/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: delete result by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.DeleteResultByIDReply'
+      security:
+      - BearerAuth: []
+      summary: delete result
+      tags:
+      - result
+    get:
+      consumes:
+      - application/json
+      description: get result detail by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetResultByIDReply'
+      security:
+      - BearerAuth: []
+      summary: get result detail
+      tags:
+      - result
+    put:
+      consumes:
+      - application/json
+      description: update result information by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: result information
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateResultByIDRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.UpdateResultByIDReply'
+      security:
+      - BearerAuth: []
+      summary: update result
+      tags:
+      - result
+  /api/v1/result/list:
+    post:
+      consumes:
+      - application/json
+      description: list of results by paging and conditions
+      parameters:
+      - description: query parameters
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/types.Params'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ListResultsReply'
+      security:
+      - BearerAuth: []
+      summary: list of results by query parameters
+      tags:
+      - result
+  /api/v1/smsHistory:
+    post:
+      consumes:
+      - application/json
+      description: submit information to create smsHistory
+      parameters:
+      - description: smsHistory information
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateSmsHistoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.CreateSmsHistoryReply'
+      security:
+      - BearerAuth: []
+      summary: create smsHistory
+      tags:
+      - smsHistory
+  /api/v1/smsHistory/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: delete smsHistory by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.DeleteSmsHistoryByIDReply'
+      security:
+      - BearerAuth: []
+      summary: delete smsHistory
+      tags:
+      - smsHistory
+    get:
+      consumes:
+      - application/json
+      description: get smsHistory detail by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetSmsHistoryByIDReply'
+      security:
+      - BearerAuth: []
+      summary: get smsHistory detail
+      tags:
+      - smsHistory
+    put:
+      consumes:
+      - application/json
+      description: update smsHistory information by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: smsHistory information
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateSmsHistoryByIDRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.UpdateSmsHistoryByIDReply'
+      security:
+      - BearerAuth: []
+      summary: update smsHistory
+      tags:
+      - smsHistory
+  /api/v1/smsHistory/list:
+    post:
+      consumes:
+      - application/json
+      description: list of smsHistorys by paging and conditions
+      parameters:
+      - description: query parameters
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/types.Params'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ListSmsHistorysReply'
+      security:
+      - BearerAuth: []
+      summary: list of smsHistorys by query parameters
+      tags:
+      - smsHistory
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: Type Bearer your-jwt-token to Value
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
