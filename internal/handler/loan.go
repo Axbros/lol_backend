@@ -24,6 +24,7 @@ import (
 	"github.com/go-dev-frame/sponge/pkg/gin/response"
 	"github.com/go-dev-frame/sponge/pkg/logger"
 	"github.com/go-dev-frame/sponge/pkg/utils"
+	"github.com/wechatpay-apiv3/wechatpay-go/core"
 )
 
 var _ LoanHandler = (*loanHandler)(nil)
@@ -41,8 +42,9 @@ type LoanHandler interface {
 }
 
 type loanHandler struct {
-	iDao   dao.LoanDao
-	alipay *alipay.Client
+	iDao      dao.LoanDao
+	alipay    *alipay.Client
+	wechatPay *core.Client
 }
 
 // NewLoanHandler creating the handler interface
@@ -52,7 +54,8 @@ func NewLoanHandler() LoanHandler {
 			database.GetDB(), // db driver is mysql
 			cache.NewLoanCache(database.GetCacheType()),
 		),
-		alipay: payment.GetAlipayClient(),
+		alipay:    payment.GetAlipayClient(),
+		wechatPay: payment.GetWechatClient(),
 	}
 }
 
@@ -300,7 +303,7 @@ func (h *loanHandler) Pay(c *gin.Context) {
 	var subject string
 
 	money := fmt.Sprintf("%.2f", loan.MonthlyPayment)
-	subject = loan.Name + "償還" + loan.CarModel + "月供" + money + ".00元"
+	subject = loan.Name + "偿还【" + loan.CarModel + "】月供" + money + ".00元"
 
 	var url string
 	tradeNo := generateTradeNo()

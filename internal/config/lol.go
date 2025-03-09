@@ -41,6 +41,7 @@ type Config struct {
 	NacosRd    NacosRd      `yaml:"nacosRd" json:"nacosRd"`
 	Redis      Redis        `yaml:"redis" json:"redis"`
 	Alipay     Alipay       `yaml:"alipay" json:"alipay"`
+	WechatPay  WechatPay    `yaml:"wechatPay" json:"wechatPay"`
 }
 
 type Consul struct {
@@ -179,4 +180,13 @@ type Alipay struct {
 	PublicKey  string `yaml:"publicKey" json:"publicKey"`
 	NotifyURL  string `yaml:"notifyURL" json:"notifyURL"`
 	ReturnURL  string `yaml:"returnURL" json:"returnURL"`
+}
+
+type WechatPay struct {
+	AppID                      string `yaml:"appID" json:"appID"`
+	MchID                      string `yaml:"mchID" json:"mchID"`
+	MchCertificateSerialNumber string `yaml:"mchCertificateSerialNumber" json:"mchCertificateSerialNumber"`
+	MchPrivateKeyPath          string `yaml:"mchPrivateKeyPath" json:"mchPrivateKeyPath"`
+	MchAPIv3Key                string `yaml:"mchAPIv3Key" json:"mchAPIv3Key"`
+	NotifyURL                  string `yaml:"notifyUrl" json:"notifyUrl"`
 }

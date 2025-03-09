@@ -1,21 +1,26 @@
 package payment
 
 import (
+	"context"
 	"log"
 	"lol/internal/config"
 	"sync"
 
 	"github.com/smartwalle/alipay/v3"
+	"github.com/wechatpay-apiv3/wechatpay-go/core"
+	"github.com/wechatpay-apiv3/wechatpay-go/core/option"
+	"github.com/wechatpay-apiv3/wechatpay-go/utils"
 )
 
 var (
 	alipayClient *alipay.Client
+	wechatClient *core.Client
 	gAlipayOnce  sync.Once
 )
 
 //TODO wechatClient *wechat.Client
 
-func InitPayment() {
+func InitAliPayment() {
 	appID := config.Get().Alipay.AppID
 	privateKey := config.Get().Alipay.PrivateKey
 	publicKey := config.Get().Alipay.PublicKey
@@ -34,11 +39,41 @@ func InitPayment() {
 	}
 }
 
+func InitWechatPayment() {
+	mchID := config.Get().WechatPay.MchID
+	mchCertificateSerialNumber := config.Get().WechatPay.MchCertificateSerialNumber
+	mchAPIv3Key := config.Get().WechatPay.MchAPIv3Key
+	mchPrivateKeyPath := config.Get().WechatPay.MchPrivateKeyPath
+
+	mchPrivateKey, err := utils.LoadPrivateKeyWithPath(mchPrivateKeyPath)
+	if err != nil {
+		log.Fatal("load merchant private key error")
+	}
+	ctx := context.Background()
+	// 使用商户私钥等初始化 client，并使它具有自动定时获取微信支付平台证书的能力
+	opts := []core.ClientOption{
+		option.WithWechatPayAutoAuthCipher(mchID, mchCertificateSerialNumber, mchPrivateKey, mchAPIv3Key),
+	}
+	wechatClient, err = core.NewClient(ctx, opts...)
+	if err != nil {
+		log.Fatalf("new wechat pay client err:%s", err)
+	}
+}
+
 func GetAlipayClient() *alipay.Client {
 	if alipayClient == nil {
 		gAlipayOnce.Do(func() {
-			InitPayment()
+			InitAliPayment()
 		})
 	}
 	return alipayClient
+}
+
+func GetWechatClient() *core.Client {
+	if wechatClient == nil {
+		gAlipayOnce.Do(func() {
+			InitWechatPayment()
+		})
+	}
+	return wechatClient
 }
