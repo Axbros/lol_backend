@@ -13,9 +13,10 @@ import (
 )
 
 var (
-	alipayClient *alipay.Client
-	wechatClient *core.Client
-	gAlipayOnce  sync.Once
+	alipayClient  *alipay.Client
+	wechatClient  *core.Client
+	gAlipayOnce   sync.Once
+	gWchatPayOnce sync.Once
 )
 
 //TODO wechatClient *wechat.Client
@@ -45,18 +46,20 @@ func InitWechatPayment() {
 	mchAPIv3Key := config.Get().WechatPay.MchAPIv3Key
 	mchPrivateKeyPath := config.Get().WechatPay.MchPrivateKeyPath
 
+	// 读取商户私钥文件
 	mchPrivateKey, err := utils.LoadPrivateKeyWithPath(mchPrivateKeyPath)
 	if err != nil {
-		log.Fatal("load merchant private key error")
+		log.Print("load merchant private key error")
 	}
 	ctx := context.Background()
 	// 使用商户私钥等初始化 client，并使它具有自动定时获取微信支付平台证书的能力
 	opts := []core.ClientOption{
+		// 按照正确的参数顺序和类型传递
 		option.WithWechatPayAutoAuthCipher(mchID, mchCertificateSerialNumber, mchPrivateKey, mchAPIv3Key),
 	}
 	wechatClient, err = core.NewClient(ctx, opts...)
 	if err != nil {
-		log.Fatalf("new wechat pay client err:%s", err)
+		log.Fatalf("new wechat pay client err: %s", err)
 	}
 }
 
@@ -71,7 +74,7 @@ func GetAlipayClient() *alipay.Client {
 
 func GetWechatClient() *core.Client {
 	if wechatClient == nil {
-		gAlipayOnce.Do(func() {
+		gWchatPayOnce.Do(func() {
 			InitWechatPayment()
 		})
 	}

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -25,6 +26,12 @@ import (
 	"github.com/go-dev-frame/sponge/pkg/logger"
 	"github.com/go-dev-frame/sponge/pkg/utils"
 	"github.com/wechatpay-apiv3/wechatpay-go/core"
+	"github.com/wechatpay-apiv3/wechatpay-go/services/payments/native"
+)
+
+const (
+	pollingInterval    = 10 * time.Second
+	maxPollingAttempts = 30 // 最大查询次数
 )
 
 var _ LoanHandler = (*loanHandler)(nil)
@@ -301,15 +308,19 @@ func (h *loanHandler) Pay(c *gin.Context) {
 	}
 	//開始調用支付寶/微信網頁支付接口
 	var subject string
+	totalMoney := loan.MonthlyPayment + loan.MonthlyPayment*6/1000
+	money := fmt.Sprintf("%.2f", totalMoney)
 
-	money := fmt.Sprintf("%.2f", loan.MonthlyPayment)
-	subject = loan.Name + "偿还【" + loan.CarModel + "】月供" + money + ".00元"
+	subject = loan.Name + "偿还【" + loan.CarModel + "】月供" + money + "元"
 
 	var url string
 	tradeNo := generateTradeNo()
 	if form.Method == "alipay" {
 		//支付寶
 		url = WapAlipay(h.alipay, subject, money, tradeNo)
+	} else {
+		url = WechatNativePay(h.wechatPay, subject, totalMoney, tradeNo)
+		go trackWechatOrder(h, ctx, h.wechatPay, tradeNo)
 	}
 	now := time.Now()
 	payments := &model.PaymentHistory{
@@ -368,6 +379,81 @@ func (h *loanHandler) Notify(c *gin.Context) {
 	c.String(http.StatusOK, "success")
 }
 
+// 订单查询函数
+func queryWechatOrderStatus(ctx context.Context, client *core.Client, outTradeNo string) (bool, error) {
+	mchid := config.Get().WechatPay.MchID
+	svc := native.NativeApiService{Client: client}
+	resp, result, err := svc.QueryOrderByOutTradeNo(ctx,
+		native.QueryOrderByOutTradeNoRequest{
+			OutTradeNo: core.String(outTradeNo),
+			Mchid:      core.String(mchid),
+		},
+	)
+
+	if err != nil {
+		// 处理错误
+		log.Printf("call QueryOrderByOutTradeNo err: %s", err)
+		return false, err
+	}
+
+	if result.Response.StatusCode != 200 {
+		// 非 200 状态码，认为查询异常
+		log.Printf("QueryOrderByOutTradeNo unexpected status code: %d", result.Response.StatusCode)
+		return false, nil
+	}
+
+	// 检查订单状态
+	if resp.TradeState != nil && *resp.TradeState == "SUCCESS" {
+		log.Printf("Order %s has been paid successfully", outTradeNo)
+		return true, nil
+	}
+
+	log.Printf("Order %s is not paid yet", outTradeNo)
+	return false, nil
+}
+
+// 订单跟踪函数
+func trackWechatOrder(h *loanHandler, ctx context.Context, client *core.Client, outTradeNo string) {
+	attempts := 0
+	ticker := time.NewTicker(pollingInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Printf("订单跟踪被取消，订单号: %s", outTradeNo)
+			err := h.iDao.UpdatePaymentStatusByTradeNo(ctx, outTradeNo, "CANCEL")
+			if err != nil {
+				log.Printf("更新订单状态失败: %v", err)
+			}
+			return
+		case <-ticker.C:
+			attempts++
+			if attempts > maxPollingAttempts {
+				log.Printf("达到最大查询次数，停止跟踪订单，订单号: %s", outTradeNo)
+				err := h.iDao.UpdatePaymentStatusByTradeNo(ctx, outTradeNo, "TIME_OUT")
+				if err != nil {
+					log.Printf("更新订单状态失败: %v", err)
+				}
+				return
+			}
+			paid, err := queryWechatOrderStatus(ctx, client, outTradeNo)
+			if err != nil {
+				log.Printf("查询订单状态出错，订单号: %s, 错误信息: %v", outTradeNo, err)
+				continue
+			}
+			if paid {
+				log.Printf("订单已支付，结束跟踪，订单号: %s", outTradeNo)
+				err := h.iDao.UpdatePaymentStatusByTradeNo(ctx, outTradeNo, "SUCCESS")
+				if err != nil {
+					log.Printf("更新订单状态失败: %v", err)
+				}
+				return
+			}
+			log.Printf("订单未支付，继续跟踪，订单号: %s，第 %d 次查询", outTradeNo, attempts)
+		}
+	}
+}
 func getLoanIDFromPath(c *gin.Context) (string, uint64, bool) {
 	idStr := c.Param("id")
 	id, err := utils.StrToUint64E(idStr)
@@ -427,6 +513,34 @@ func WapAlipay(alipayClient *alipay.Client, subject string, totalAmount string, 
 	return url.String()
 }
 
+func WechatNativePay(wechatClient *core.Client, subject string, totalAmount float64, tradeNo string) string {
+	ctx := context.Background()
+	appid := config.Get().WechatPay.AppID
+	mchid := config.Get().WechatPay.MchID
+	notifyURL := config.Get().WechatPay.NotifyURL
+	totalAmountInFen := int64(totalAmount * 100)
+	// 创建 Native 支付服务实例
+	service := native.NativeApiService{Client: wechatClient}
+	// 构建支付请求参数
+	req := native.PrepayRequest{
+		Appid:       core.String(appid),
+		Mchid:       core.String(mchid),
+		Description: core.String(subject),
+		OutTradeNo:  core.String(tradeNo),
+		TimeExpire:  core.Time(time.Now()),
+		GoodsTag:    core.String("用户偿还车款"),
+		NotifyUrl:   core.String(notifyURL),
+		Amount: &native.Amount{
+			Total: core.Int64(totalAmountInFen), // 订单总金额，单位为分
+		},
+	}
+	resp, _, err := service.Prepay(ctx, req)
+	if err != nil {
+		log.Fatalf("prepay error: %v", err)
+	}
+
+	return *resp.CodeUrl
+}
 func generateTradeNo() string {
 	return time.Now().Format("20060102150405")
 }

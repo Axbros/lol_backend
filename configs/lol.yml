@@ -74,9 +74,9 @@ alipay:
   gatewayUrl: https://openapi-sandbox.dl.alipaydev.com/gateway.do
 
 wechatPay:
-  appId: wx06078a91f194c84f
+  appId: wxbdbe0d51387a99d1
   mchId: 1679562034
-  mchCertificateSerialNumber: 3DAE4D3E17C8B271B11AD0B7526512C2F9540F13
+  mchCertificateSerialNumber: 22EF934CAE4EA6E1E11F83FC7C427092636A2D63
   mchAPIv3Key: AFB53C1D06E10F169EA7A1E2E027CA99
   mchPrivateKeyPath: C:\Users\Administrator\Desktop\code\lol-web-http-070928\lol-web-http-070928\cert\apiclient_key.pem
-  notifyUrl: http://test.fzlol.xyz/api/v1/loan/notify
+  notifyUrl: http://test.fzlol.xyz/api/v1/loan/wechat/notify
