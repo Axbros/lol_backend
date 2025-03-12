@@ -3,6 +3,9 @@ package dao
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
+	"time"
 
 	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
@@ -289,5 +292,36 @@ func (d *loanDao) CreatePaymentHistory(ctx context.Context, table *model.Payment
 }
 
 func (d *loanDao) UpdatePaymentStatusByTradeNo(ctx context.Context, tradeNo string, status string) error {
-	return d.db.Model(&model.PaymentHistory{}).Where("out_trade_no = ?", tradeNo).Update("status", status).Error
+	maxRetries := 3
+	for i := 0; i < maxRetries; i++ {
+		err := d.db.Model(&model.PaymentHistory{}).Where("out_trade_no = ?", tradeNo).Update("status", status).Error
+		if err == nil {
+			return nil
+		}
+		if !isConnectionError(err) {
+			return err
+		}
+		// 打印重试信息
+		fmt.Printf("第 %d 次更新支付状态失败，原因: %v，将在 2 秒后重试...\n", i+1, err)
+		// 等待一段时间后重试
+		time.Sleep(2 * time.Second)
+	}
+	return fmt.Errorf("更新支付状态失败，经过 %d 次重试后仍然失败", maxRetries)
+}
+
+// isConnectionError 检查错误是否是连接相关的错误
+func isConnectionError(err error) bool {
+	// 这里可以根据具体的错误信息进行判断
+	errorMessages := []string{
+		"read tcp",
+		"connection reset by peer",
+		"broken pipe",
+		"i/o timeout",
+	}
+	for _, msg := range errorMessages {
+		if strings.Contains(err.Error(), msg) {
+			return true
+		}
+	}
+	return false
 }

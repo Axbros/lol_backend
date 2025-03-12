@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -31,9 +32,11 @@ import (
 
 const (
 	pollingInterval    = 10 * time.Second
-	maxPollingAttempts = 30 // 最大查询次数
+	maxPollingAttempts = 17 // 最大查询次数
 )
 
+var cancelMutex sync.Mutex
+var cancel context.CancelFunc
 var _ LoanHandler = (*loanHandler)(nil)
 
 // LoanHandler defining the handler interface
@@ -320,7 +323,17 @@ func (h *loanHandler) Pay(c *gin.Context) {
 		url = WapAlipay(h.alipay, subject, money, tradeNo)
 	} else {
 		url = WechatNativePay(h.wechatPay, subject, totalMoney, tradeNo)
-		go trackWechatOrder(h, ctx, h.wechatPay, tradeNo)
+		ctxForTracking, c := context.WithTimeout(context.Background(), 10*time.Minute)
+		cancel = c
+		go func() {
+			trackWechatOrder(h, ctxForTracking, h.wechatPay, tradeNo)
+			cancelMutex.Lock()
+			if cancel != nil {
+				cancel()
+				cancel = nil
+			}
+			cancelMutex.Unlock()
+		}()
 	}
 	now := time.Now()
 	payments := &model.PaymentHistory{
@@ -421,7 +434,9 @@ func trackWechatOrder(h *loanHandler, ctx context.Context, client *core.Client, 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("订单跟踪被取消，订单号: %s", outTradeNo)
+
+			log.Printf("订单跟踪被取消，订单号: %s，原因: %v", outTradeNo, ctx.Err())
+			CloseOrder(h.wechatPay, outTradeNo, ctx)
 			err := h.iDao.UpdatePaymentStatusByTradeNo(ctx, outTradeNo, "CANCEL")
 			if err != nil {
 				log.Printf("更新订单状态失败: %v", err)
@@ -435,11 +450,13 @@ func trackWechatOrder(h *loanHandler, ctx context.Context, client *core.Client, 
 				if err != nil {
 					log.Printf("更新订单状态失败: %v", err)
 				}
+				CloseOrder(h.wechatPay, outTradeNo, ctx)
 				return
 			}
 			paid, err := queryWechatOrderStatus(ctx, client, outTradeNo)
 			if err != nil {
 				log.Printf("查询订单状态出错，订单号: %s, 错误信息: %v", outTradeNo, err)
+				CloseOrder(h.wechatPay, outTradeNo, ctx)
 				continue
 			}
 			if paid {
@@ -527,7 +544,6 @@ func WechatNativePay(wechatClient *core.Client, subject string, totalAmount floa
 		Mchid:       core.String(mchid),
 		Description: core.String(subject),
 		OutTradeNo:  core.String(tradeNo),
-		TimeExpire:  core.Time(time.Now()),
 		GoodsTag:    core.String("用户偿还车款"),
 		NotifyUrl:   core.String(notifyURL),
 		Amount: &native.Amount{
@@ -541,6 +557,31 @@ func WechatNativePay(wechatClient *core.Client, subject string, totalAmount floa
 
 	return *resp.CodeUrl
 }
+
+// 以下情况需要调用关单接口：
+// 1. 商户订单支付失败需要生成新单号重新发起支付，要对原订单号调用关单，避免重复支付；
+// 2. 系统下单后，用户支付超时，系统退出不再受理，避免用户继续，请调用关单接口。
+func CloseOrder(wechatClient *core.Client, outTradeNo string, ctx context.Context) bool {
+	svc := native.NativeApiService{Client: wechatClient}
+	mchid := config.Get().WechatPay.MchID
+	result, err := svc.CloseOrder(ctx,
+		native.CloseOrderRequest{
+			OutTradeNo: core.String(outTradeNo),
+			Mchid:      core.String(mchid),
+		},
+	)
+
+	if err != nil {
+		// 处理错误
+		log.Printf("call CloseOrder err:%s", err)
+		return false
+	} else {
+		// 处理返回结果
+		log.Printf("status=%d", result.Response.StatusCode)
+		return true
+	}
+}
+
 func generateTradeNo() string {
 	return time.Now().Format("20060102150405")
 }
