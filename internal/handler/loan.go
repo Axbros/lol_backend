@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -282,6 +283,7 @@ func (h *loanHandler) GetDetail(c *gin.Context) {
 	ctx := middleware.WrapCtx(c)
 	loan, err := h.iDao.GetByMobileAndCode(ctx, form.Mobile, form.Code)
 	if err != nil {
+		logger.Warnf("failed to get user loan detail ,user mobile:%s,user code:%s", form.Mobile, form.Code)
 		response.Error(c, ecode.ErrListLoan)
 		return
 	}
@@ -301,6 +303,7 @@ func (h *loanHandler) Pay(c *gin.Context) {
 	ctx := middleware.WrapCtx(c)
 	loan, err := h.iDao.GetByMobileAndCode(ctx, form.Mobile, form.Code)
 	if err != nil {
+
 		response.Error(c, ecode.ErrListLoan)
 		return
 	}
@@ -311,10 +314,17 @@ func (h *loanHandler) Pay(c *gin.Context) {
 	}
 	//開始調用支付寶/微信網頁支付接口
 	var subject string
-	totalMoney := loan.MonthlyPayment + loan.MonthlyPayment*6/1000
+
+	baseMoney := loan.MonthlyPayment + float64(loan.OverDueMoney)
+
+	totalMoney := baseMoney + baseMoney*(6.0/1000)
 	money := fmt.Sprintf("%.2f", totalMoney)
 
-	subject = loan.Name + "偿还【" + loan.CarModel + "】月租" + money + "元"
+	extInfo := ""
+	if loan.OverDueMoney > 0 {
+		extInfo = "（逾期费用：" + strconv.Itoa(loan.OverDueMoney) + "元）"
+	}
+	subject = loan.Name + "支付【" + loan.CarModel + "】月租" + money + "元" + extInfo
 
 	var url string
 	tradeNo := generateTradeNo()

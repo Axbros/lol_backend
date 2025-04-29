@@ -15,7 +15,7 @@ var (
 	ErrDeleteByIDLoan = errcode.NewError(loanBaseCode+2, "failed to delete "+loanName)
 	ErrUpdateByIDLoan = errcode.NewError(loanBaseCode+3, "failed to update "+loanName)
 	ErrGetByIDLoan    = errcode.NewError(loanBaseCode+4, "failed to get "+loanName+" details")
-	ErrListLoan       = errcode.NewError(loanBaseCode+5, "failed to list of "+loanName)
+	ErrListLoan       = errcode.NewError(loanBaseCode+5, "failed to list of "+loanName+",maybe username or password is wrong!")
 	ErrLoanStatus     = errcode.NewError(loanBaseCode+6, "loan status error")
 	ErrCreatePayment  = errcode.NewError(loanBaseCode+7, "failed to create payment")
 
