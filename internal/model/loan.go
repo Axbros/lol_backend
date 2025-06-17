@@ -17,7 +17,10 @@ type Loan struct {
 	MonthlyPayment float64    `gorm:"column:monthly_payment;type:double" json:"monthlyPayment"`      // 每月应还
 	CreateAt       *time.Time `gorm:"column:create_at;type:datetime" json:"createAt"`                // 创建时间
 	Status         int        `gorm:"column:status;type:tinyint" json:"status"`                      // 状态
-	PaidCount      int64      `gorm:"column:paid_count;type:int(11)" json:"paidCount"`               // 已还期数
+	PaidCount      int        `gorm:"column:-;" json:"paidCount"`                                    // 已还期数 数据库没有 但是 需要record赋值
+	OverDueDays    int        `gorm:"column:-";json:"overDueDays"`                                   //逾期天数
+	LastPayDate    time.Time  `gorm:"column:-";json:"lastPayDate"`                                   //上次还款日期
+	OverDueMoney   int        `gorm:"column:-";json:"overDueMoney"`                                  //逾期金额
 }
 
 // TableName table name

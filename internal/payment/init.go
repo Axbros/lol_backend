@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"lol/internal/config"
+	"os"
 	"sync"
 
 	"github.com/smartwalle/alipay/v3"
@@ -41,15 +42,24 @@ func InitAliPayment() {
 }
 
 func InitWechatPayment() {
+	// 输出当前工作目录
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Println("Get Current Workplace Direction Error::", err)
+		return
+	}
+
 	mchID := config.Get().WechatPay.MchID
 	mchCertificateSerialNumber := config.Get().WechatPay.MchCertificateSerialNumber
 	mchAPIv3Key := config.Get().WechatPay.MchAPIv3Key
-	mchPrivateKeyPath := config.Get().WechatPay.MchPrivateKeyPath
-
 	// 读取商户私钥文件
+	mchPrivateKeyPath := dir + config.Get().WechatPay.MchPrivateKeyPath
+
 	mchPrivateKey, err := utils.LoadPrivateKeyWithPath(mchPrivateKeyPath)
 	if err != nil {
-		log.Print("load merchant private key error")
+
+		log.Println("Load merchant private key error,the merchant private key path is:" + mchPrivateKeyPath)
+		log.Println("Current Workplace Direction is:", dir)
 	}
 	ctx := context.Background()
 	// 使用商户私钥等初始化 client，并使它具有自动定时获取微信支付平台证书的能力
