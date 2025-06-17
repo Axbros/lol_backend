@@ -314,7 +314,7 @@ func (h *loanHandler) Pay(c *gin.Context) {
 	totalMoney := loan.MonthlyPayment + loan.MonthlyPayment*6/1000
 	money := fmt.Sprintf("%.2f", totalMoney)
 
-	subject = loan.Name + "偿还【" + loan.CarModel + "】月租" + money + "元"
+	subject = loan.Name + "支付【" + loan.CarModel + "】月租" + money + "元"
 
 	var url string
 	tradeNo := generateTradeNo()
