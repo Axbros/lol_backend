@@ -314,7 +314,6 @@ func (d *loanDao) GetByMobileAndCode(ctx context.Context, mobile string, code st
 		lastPayDate = lastRepaymentDate
 
 		// 获取当前日期
-		currentDate := time.Now()
 
 		// 解析还款日期
 		returnDateInt, err := strconv.Atoi(loanRecord.LoanReturnDate)
@@ -324,7 +323,7 @@ func (d *loanDao) GetByMobileAndCode(ctx context.Context, mobile string, code st
 		}
 
 		// 计算逾期天数
-		overdueDays = calculateOverdueDays(lastRepaymentDate, returnDateInt, currentDate)
+		overdueDays = calculateOverdueDays(returnDateInt)
 	}
 
 	loanRecord.OverDueDays = overdueDays
@@ -365,30 +364,22 @@ func (d *loanDao) getPaymentHistory(ctx context.Context, mobile string) ([]*mode
 //	}
 //
 // calculateOverdueDays 计算逾期天数
-func calculateOverdueDays(lastRepaymentDate time.Time, returnDateInt int, currentDate time.Time) int {
-	overdueDays := 0
-	// 计算上次还款日期到当前日期的天数
-	daysSinceLastRepayment := int(currentDate.Sub(lastRepaymentDate).Hours() / 24)
-	logger.Infof("the distance from last paid time to today is : %d ,lastRepaymentDate is : %s ,currentDate is : %s ", daysSinceLastRepayment, lastRepaymentDate, currentDate)
-	if daysSinceLastRepayment > 30 {
-		// 从本月上月的下个月开始计算应还款日期
-		nextDueMonth := lastRepaymentDate.Month() + 1
-		if nextDueMonth > 12 {
-			nextDueMonth = 1
-		}
-		dueDate := time.Date(currentDate.Year(), nextDueMonth, returnDateInt, 0, 0, 0, 0, time.Local)
-		if dueDate.Before(lastRepaymentDate) {
-			dueDate = dueDate.AddDate(0, 1, 0)
-		}
-		if dueDate.Before(currentDate) {
-			overdueDays = int(currentDate.Sub(dueDate).Hours() / 24)
-		}
-	} else {
-		// 小于 30 天，没有逾期，直接返回 0
+func calculateOverdueDays(returnDateInt int) int {
+	currentDate := time.Now()
+
+	year, month, _ := currentDate.Date()
+
+	// 构建还款日（当月的returnDateInt日）
+	dueDate := time.Date(year, month, returnDateInt, 0, 0, 0, 0, currentDate.Location())
+
+	// 如果当前日期小于还款日，则没有逾期
+	if currentDate.Before(dueDate) {
 		return 0
 	}
 
-	return overdueDays
+	// 计算逾期天数
+	diff := currentDate.Sub(dueDate)
+	return int(diff.Hours() / 24)
 
 }
 
