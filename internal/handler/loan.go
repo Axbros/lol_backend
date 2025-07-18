@@ -4,15 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
-	"net/http"
-	"strconv"
-	"sync"
-	"time"
-
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/copier"
 	"github.com/smartwalle/alipay/v3"
+	"github.com/wechatpay-apiv3/wechatpay-go/core/auth/verifiers"
+	"github.com/wechatpay-apiv3/wechatpay-go/core/downloader"
+	"github.com/wechatpay-apiv3/wechatpay-go/core/notify"
+	"github.com/wechatpay-apiv3/wechatpay-go/services/payments"
+	wechatUtils "github.com/wechatpay-apiv3/wechatpay-go/utils"
+	"log"
+	"net/http"
+	"os"
+	"strconv"
+	"sync"
+	"time"
 
 	"lol/internal/cache"
 	"lol/internal/config"
@@ -333,23 +338,23 @@ func (h *loanHandler) Pay(c *gin.Context) {
 		url = WapAlipay(h.alipay, subject, money, tradeNo)
 	} else {
 		url = WechatNativePay(h.wechatPay, subject, totalMoney, tradeNo)
-		ctxForTracking, c := context.WithTimeout(context.Background(), 10*time.Minute)
-		cancel = c
-		go func() {
-			trackWechatOrder(h, ctxForTracking, h.wechatPay, tradeNo)
-			cancelMutex.Lock()
-			if cancel != nil {
-				cancel()
-				cancel = nil
-			}
-			cancelMutex.Unlock()
-		}()
+		//ctxForTracking, c := context.WithTimeout(context.Background(), 10*time.Minute)
+		//cancel = c
+		//go func() {
+		//	trackWechatOrder(h, ctxForTracking, h.wechatPay, tradeNo)
+		//	cancelMutex.Lock()
+		//	if cancel != nil {
+		//		cancel()
+		//		cancel = nil
+		//	}
+		//	cancelMutex.Unlock()
+		//}()
 	}
 	now := time.Now()
 	payments := &model.PaymentHistory{
 		UserPhone:  form.Mobile,
 		OutTradeNo: tradeNo,
-		Status:     "",
+		Status:     "PAYING",
 		Method:     form.Method,
 		CreateAt:   &now,
 	}
@@ -364,41 +369,102 @@ func (h *loanHandler) Pay(c *gin.Context) {
 }
 
 func (h *loanHandler) Notify(c *gin.Context) {
-	c.Request.ParseForm()
-	result, err := h.alipay.DecodeNotification(c.Request.Form)
-	if err != nil {
-		log.Printf("解析支付宝异步通知参数失败: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "解析参数失败"})
+	// 解析表单数据并检查错误
+	if err := c.Request.ParseForm(); err != nil {
+		log.Printf("解析表单数据失败: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "解析请求参数失败"})
 		return
 	}
-	// 处理支付结果
-	switch result.TradeStatus {
-	case "TRADE_SUCCESS":
-		// 支付成功，处理业务逻辑
-		log.Printf("订单 %s 支付成功", result.OutTradeNo)
+
+	// 获取路径参数
+	bandName := c.Param("bandName")
+	ctx := middleware.WrapCtx(c)
+
+	// 仅处理支付宝通知
+	if bandName == "alipay" {
+		// 解析支付宝通知
+		result, err := h.alipay.DecodeNotification(c.Request.Form)
+		if err != nil {
+			log.Printf("解析支付宝异步通知参数失败: %v, 表单数据: %+v", err, c.Request.Form)
+			c.String(http.StatusBadRequest, "fail") // 支付宝要求失败返回"fail"
+			return
+		}
+
+		// 记录通知接收情况
+		log.Printf("收到支付宝通知 - 订单号: %s, 交易状态: %s", result.OutTradeNo, result.TradeStatus)
+
+		// 根据交易状态处理
+		var status string
+		switch result.TradeStatus {
+		case "TRADE_SUCCESS":
+			status = "SUCCESS"
+			log.Printf("订单 %s 支付成功", result.OutTradeNo)
+		case "TRADE_CLOSED":
+			status = "CLOSED"
+			log.Printf("订单 %s 已关闭", result.OutTradeNo)
+		case "TRADE_FINISHED":
+			log.Printf("订单 %s 交易完成", result.OutTradeNo)
+			// 无需更新状态，直接返回成功
+			c.String(http.StatusOK, "success")
+			return
+		default:
+			log.Printf("订单 %s 收到未处理的支付状态: %s", result.OutTradeNo, result.TradeStatus)
+			c.String(http.StatusOK, "success")
+			return
+		}
+
 		// 更新订单状态
-		err := h.iDao.UpdatePaymentStatusByTradeNo(c, result.OutTradeNo, "SUCCESS")
-		if err != nil {
-			log.Printf("更新订单状态失败: %v", err)
+		if err := h.iDao.UpdatePaymentStatusByTradeNo(ctx, result.OutTradeNo, status); err != nil {
+			log.Printf("更新订单 %s 状态失败: %v", result.OutTradeNo, err)
 			c.String(http.StatusInternalServerError, "fail")
 			return
 		}
-		// 这里可以添加更新订单状态、记录日志等业务逻辑
-	case "TRADE_CLOSED":
-		err := h.iDao.UpdatePaymentStatusByTradeNo(c, result.OutTradeNo, "CLOSED")
-		if err != nil {
-			log.Printf("更新订单状态失败: %v", err)
-			c.String(http.StatusInternalServerError, "fail")
-			return
-		}
-		log.Printf("订单 %s 已关闭", result.OutTradeNo)
-	case "TRADE_FINISHED":
-		log.Printf("订单 %s 交易完成", result.OutTradeNo)
-	default:
-		log.Printf("订单 %s 支付状态: %s", result.OutTradeNo, result.TradeStatus)
+	} else {
+		// 记录未支持的支付渠道
+		log.Printf("收到未支持的支付渠道通知: %s", bandName)
 	}
 
-	// 返回成功响应给支付宝
+	if bandName == "wechat" {
+		dir, err := os.Getwd()
+		if err != nil {
+			log.Println("Get Current Workplace Direction Error::", err)
+			return
+		}
+		mchPrivateKeyPath := dir + config.Get().WechatPay.MchPrivateKeyPath
+
+		mchPrivateKey, err := wechatUtils.LoadPrivateKeyWithPath(mchPrivateKeyPath)
+
+		mchID := config.Get().WechatPay.MchID
+		mchAPIv3Key := config.Get().WechatPay.MchAPIv3Key
+
+		err = downloader.MgrInstance().RegisterDownloaderWithPrivateKey(ctx, mchPrivateKey, config.Get().WechatPay.MchCertificateSerialNumber, mchID, mchAPIv3Key)
+		if err != nil {
+			logger.Warn("downloader.MgrInstance().RegisterDownloaderWithPrivateKey(ctx, mchPrivateKey, config.Get().WechatPay.MchCertificateSerialNumber,  config.Get().WechatPay.MchID, config.Get().WechatPay.MchAPIv3Key) error")
+			return
+		}
+		// 2. 获取商户号对应的微信支付平台证书访问器
+		certificateVisitor := downloader.MgrInstance().GetCertificateVisitor(mchID)
+		// 3. 使用证书访问器初始化 `notify.Handler`
+		handler := notify.NewNotifyHandler(mchAPIv3Key, verifiers.NewSHA256WithRSAVerifier(certificateVisitor))
+		transaction := new(payments.Transaction)
+		notifyReq, err := handler.ParseNotifyRequest(context.Background(), c.Request, transaction)
+		// 如果验签未通过，或者解密失败
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		// 处理通知内容
+		if notifyReq.Summary != "支付成功" {
+			logger.Warnf("微信支付失败：%s", notifyReq.Summary)
+			h.iDao.UpdatePaymentStatusByTradeNo(ctx, *transaction.OutTradeNo, "FAILED")
+		} else {
+			logger.Warnf("微信支付成功：%s", notifyReq.Summary)
+			h.iDao.UpdatePaymentStatusByTradeNo(ctx, *transaction.OutTradeNo, "SUCCESS")
+		}
+		logger.Infof("微信交易单号 %s 交易状态 %s", transaction.TransactionId, transaction.TradeState)
+	}
+
+	// 返回成功响应（支付宝要求成功返回"success"）
 	c.String(http.StatusOK, "success")
 }
 

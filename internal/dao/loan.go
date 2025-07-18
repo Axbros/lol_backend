@@ -399,7 +399,7 @@ func (d *loanDao) CreatePaymentHistory(ctx context.Context, table *model.Payment
 func (d *loanDao) UpdatePaymentStatusByTradeNo(ctx context.Context, tradeNo string, status string) error {
 	maxRetries := 3
 	for i := 0; i < maxRetries; i++ {
-		err := d.db.Model(&model.PaymentHistory{}).Where("out_trade_no = ?", tradeNo).Update("status", status).Error
+		err := d.db.Model(&model.PaymentHistory{}).WithContext(ctx).Where("out_trade_no = ?", tradeNo).Update("status", status).Error
 		if err == nil {
 			return nil
 		}
