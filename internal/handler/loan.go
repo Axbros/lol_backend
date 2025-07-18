@@ -364,10 +364,10 @@ func (h *loanHandler) Pay(c *gin.Context) {
 }
 
 func (h *loanHandler) Notify(c *gin.Context) {
-	// 解析支付宝异步通知参数
-	result, err := h.alipay.GetTradeNotification(c.Request)
+	c.Request.ParseForm()
+	result, err := h.alipay.DecodeNotification(c.Request.Form)
 	if err != nil {
-		log.Printf("解析异步通知参数失败: %v", err)
+		log.Printf("解析支付宝异步通知参数失败: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "解析参数失败"})
 		return
 	}
