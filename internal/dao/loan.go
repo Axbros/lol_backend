@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -36,7 +35,7 @@ type LoanDao interface {
 	GetByMobileAndCode(ctx context.Context, mobile string, code string) (*model.Loan, error)
 	CreatePaymentHistory(ctx context.Context, table *model.PaymentHistory) error
 	UpdatePaymentStatusByTradeNo(ctx context.Context, tradeNo string, status string) error
-	getPaymentHistory(ctx context.Context, mobile string) ([]*model.PaymentHistory, error)
+	getSuccessPaymentHistory(ctx context.Context, mobile string) ([]*model.PaymentHistory, error)
 }
 
 type loanDao struct {
@@ -286,12 +285,13 @@ func (d *loanDao) GetByMobileAndCode(ctx context.Context, mobile string, code st
 	if err := d.db.WithContext(ctx).Where("mobile = ? AND RIGHT(user_id, 6) = ?", mobile, code).First(loanRecord).Error; err != nil {
 		return nil, err
 	}
+	//表示还款完成
 	if loanRecord.Status == 1 {
 		//表示已经处理完毕 无需用户还款了
 		return loanRecord, nil
 	}
 	// 查询支付成功的历史记录
-	paymentHistoryRecords, err := d.getPaymentHistory(ctx, mobile)
+	paymentHistoryRecords, err := d.getSuccessPaymentHistory(ctx, mobile)
 	if err != nil {
 		return nil, err
 	}
@@ -313,18 +313,8 @@ func (d *loanDao) GetByMobileAndCode(ctx context.Context, mobile string, code st
 		lastRepaymentDate := *lastPayRecord.CreateAt
 		lastPayDate = lastRepaymentDate
 
-		// 获取当前日期
-		currentDate := time.Now()
-
-		// 解析还款日期
-		returnDateInt, err := strconv.Atoi(loanRecord.LoanReturnDate)
-		if err != nil {
-			logger.Errorf("failed to convert string to int, string: %s", loanRecord.LoanReturnDate)
-			return nil, err
-		}
-
-		// 计算逾期天数
-		overdueDays = calculateOverdueDays(lastRepaymentDate, returnDateInt, currentDate)
+		// 计算逾期天数 应还日期和当前日期做比较
+		overdueDays = calculateOverdueDays(lastRepaymentDate, loanRecord.LoanReturnDate)
 	}
 
 	loanRecord.OverDueDays = overdueDays
@@ -335,7 +325,7 @@ func (d *loanDao) GetByMobileAndCode(ctx context.Context, mobile string, code st
 }
 
 // getPaymentHistory 查询支付成功的历史记录
-func (d *loanDao) getPaymentHistory(ctx context.Context, mobile string) ([]*model.PaymentHistory, error) {
+func (d *loanDao) getSuccessPaymentHistory(ctx context.Context, mobile string) ([]*model.PaymentHistory, error) {
 	var paymentHistoryRecords []*model.PaymentHistory
 	if err := d.db.Model(&model.PaymentHistory{}).WithContext(ctx).Where("user_phone = ? AND status = 'SUCCESS'", mobile).Find(&paymentHistoryRecords).Error; err != nil {
 		return nil, err
@@ -365,35 +355,27 @@ func (d *loanDao) getPaymentHistory(ctx context.Context, mobile string) ([]*mode
 //	}
 //
 // calculateOverdueDays 计算逾期天数
-func calculateOverdueDays(lastRepaymentDate time.Time, returnDateInt int, currentDate time.Time) int {
-	overdueDays := 0
-	// 计算上次还款日期到当前日期的天数
-	daysSinceLastRepayment := int(currentDate.Sub(lastRepaymentDate).Hours() / 24)
-	logger.Infof("the distance from last paid time to today is : %d ,lastRepaymentDate is : %s ,currentDate is : %s ", daysSinceLastRepayment, lastRepaymentDate, currentDate)
-	if daysSinceLastRepayment > 30 {
-		// 从本月上月的下个月开始计算应还款日期
-		nextDueMonth := lastRepaymentDate.Month() + 1
-		if nextDueMonth > 12 {
-			nextDueMonth = 1
-		}
-		dueDate := time.Date(currentDate.Year(), nextDueMonth, returnDateInt, 0, 0, 0, 0, time.Local)
-		if dueDate.Before(lastRepaymentDate) {
-			dueDate = dueDate.AddDate(0, 1, 0)
-		}
-		if dueDate.Before(currentDate) {
-			overdueDays = int(currentDate.Sub(dueDate).Hours() / 24)
-		}
-	} else {
-		// 小于 30 天，没有逾期，直接返回 0
-		return 0
+func calculateOverdueDays(lastRepaymentDate time.Time, shouldPayDay string) int {
+	currentDate := time.Now()
+	//本月-上月 月份减
+	monthDistance := int(currentDate.Month()) - int(lastRepaymentDate.Month())
+	logger.Infof("month distance: %d", monthDistance)
+	daysDistance := currentDate.Day() - utils.StrToInt(shouldPayDay)
+	if daysDistance < 0 {
+		daysDistance = 0
+	}
+	//逾期天数
+
+	overdueDays := (monthDistance-1)*30 + daysDistance
+	if overdueDays < 0 {
+		overdueDays = 0
 	}
 
 	return overdueDays
-
 }
 
 func (d *loanDao) CreatePaymentHistory(ctx context.Context, table *model.PaymentHistory) error {
-	return d.db.Model(&model.PaymentHistory{}).Create(table).Error
+	return d.db.Model(&model.PaymentHistory{}).WithContext(ctx).Create(table).Error
 }
 
 func (d *loanDao) UpdatePaymentStatusByTradeNo(ctx context.Context, tradeNo string, status string) error {
