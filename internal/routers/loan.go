@@ -28,5 +28,5 @@ func loanRouter(group *gin.RouterGroup, h handler.LoanHandler) {
 	g.POST("/list", h.List)        // [post] /api/v1/loan/list
 	g.POST("/detail", h.GetDetail)
 	g.POST("/pay", h.Pay)
-	g.POST("/notify", h.Notify)
+	g.POST("/:bandName/notify", h.Notify)
 }
