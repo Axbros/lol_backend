@@ -302,6 +302,12 @@ func (d *loanDao) GetByMobileAndCode(ctx context.Context, mobile string, code st
 
 	overdueDays := 0
 	var lastPayDate time.Time
+	// 解析还款日期
+	returnDateInt, err := strconv.Atoi(loanRecord.LoanReturnDate)
+	if err != nil {
+		logger.Errorf("failed to convert string to int, string: %s", loanRecord.LoanReturnDate)
+		return nil, err
+	}
 
 	if paidSuccessLength > 0 {
 		lastPayRecord := paymentHistoryRecords[paidSuccessLength-1]
@@ -314,21 +320,23 @@ func (d *loanDao) GetByMobileAndCode(ctx context.Context, mobile string, code st
 		lastPayDate = lastRepaymentDate
 
 		// 获取当前日期
-
-		// 解析还款日期
-		returnDateInt, err := strconv.Atoi(loanRecord.LoanReturnDate)
-		if err != nil {
-			logger.Errorf("failed to convert string to int, string: %s", loanRecord.LoanReturnDate)
-			return nil, err
-		}
-
 		// 计算逾期天数
 		overdueDays = calculateOverdueDays(returnDateInt)
 	}
 
-	loanRecord.OverDueDays = overdueDays
+	now := time.Now()
+	year, month, _ := now.Date()
+	shouldPayDate := time.Date(year, month, returnDateInt, 0, 0, 0, 0, now.Location())
+	loanRecord.ShouldPayDate = shouldPayDate
 	loanRecord.LastPayDate = lastPayDate
-	loanRecord.OverDueMoney = overdueDays * 100
+
+	isOverdue := loanRecord.LastPayDate.Before(loanRecord.ShouldPayDate)
+
+	if isOverdue {
+		// 上次缴费日期在本次应该缴费之前 则算逾期
+		loanRecord.OverDueDays = overdueDays
+		loanRecord.OverDueMoney = overdueDays * 100
+	}
 
 	return loanRecord, nil
 }

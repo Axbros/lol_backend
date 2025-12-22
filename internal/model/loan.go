@@ -21,6 +21,7 @@ type Loan struct {
 	OverDueDays    int        `gorm:"-" json:"overDueDays"`                                          // 逾期天数
 	LastPayDate    time.Time  `gorm:"-" json:"lastPayDate"`                                          // 上次还款日期
 	OverDueMoney   int        `gorm:"-" json:"overDueMoney"`                                         // 逾期金额
+	ShouldPayDate  time.Time  `gorm:"-" json:"shouldPayDate"`
 }
 
 // TableName table name

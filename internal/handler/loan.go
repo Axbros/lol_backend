@@ -350,6 +350,8 @@ func (h *loanHandler) Pay(c *gin.Context) {
 		UserPhone:  form.Mobile,
 		OutTradeNo: tradeNo,
 		Status:     "",
+		BaseMoney:  loan.MonthlyPayment,
+		TotalMoney: totalMoney,
 		Method:     form.Method,
 		CreateAt:   &now,
 	}
@@ -359,7 +361,8 @@ func (h *loanHandler) Pay(c *gin.Context) {
 		return
 	}
 	response.Success(c, gin.H{
-		"url": url,
+		"url":    url,
+		"amount": money,
 	})
 }
 
