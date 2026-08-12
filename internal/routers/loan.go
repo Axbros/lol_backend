@@ -28,5 +28,11 @@ func loanRouter(group *gin.RouterGroup, h handler.LoanHandler) {
 	g.POST("/list", h.List)        // [post] /api/v1/loan/list
 	g.POST("/detail", h.GetDetail)
 	g.POST("/pay", h.Pay)
-	g.POST("/:bandName/notify", h.Notify)
+	g.GET("/payment-methods", h.PaymentMethods)
+	g.POST("/alipay/notify", h.Notify)
+	g.POST("/wechat/notify", h.Notify)
+	g.POST("/xpay/alipay/pay", h.XPayAlipay)
+	g.POST("/xpay/wechat/pay", h.XPayWechat)
+	g.GET("/xpay/notify", h.XPayNotify)
+	g.POST("/xpay/notify", h.XPayNotify)
 }

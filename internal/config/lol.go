@@ -14,6 +14,7 @@ func Init(configFile string, fs ...func()) error {
 }
 
 func Show(hiddenFields ...string) string {
+	hiddenFields = append(hiddenFields, `"merchantKey"`, `"secretID"`, `"secretKey"`)
 	return conf.Show(config, hiddenFields...)
 }
 
@@ -42,6 +43,9 @@ type Config struct {
 	Redis      Redis        `yaml:"redis" json:"redis"`
 	Alipay     Alipay       `yaml:"alipay" json:"alipay"`
 	WechatPay  WechatPay    `yaml:"wechatPay" json:"wechatPay"`
+	XPay       XPay         `yaml:"xpay" json:"xpay"`
+	Payment    Payment      `yaml:"payment" json:"payment"`
+	SMS        SMS          `yaml:"sms" json:"sms"`
 }
 
 type Consul struct {
@@ -189,4 +193,41 @@ type WechatPay struct {
 	MchPrivateKeyPath          string `yaml:"mchPrivateKeyPath" json:"mchPrivateKeyPath"`
 	MchAPIv3Key                string `yaml:"mchAPIv3Key" json:"mchAPIv3Key"`
 	NotifyURL                  string `yaml:"notifyUrl" json:"notifyUrl"`
+}
+
+type XPay struct {
+	Host        string `yaml:"host" json:"host"`
+	MAPIURL     string `yaml:"mapiUrl" json:"mapiUrl"`
+	MerchantID  string `yaml:"merchantId" json:"merchantId"`
+	MerchantKey string `yaml:"merchantKey" json:"merchantKey"`
+	ReturnURL   string `yaml:"returnUrl" json:"returnUrl"`
+}
+
+type Payment struct {
+	Alipay PaymentChannel `yaml:"alipay" json:"alipay"`
+	Wechat PaymentChannel `yaml:"wechat" json:"wechat"`
+}
+
+type PaymentChannel struct {
+	Enabled  bool   `yaml:"enabled" json:"enabled"`
+	Provider string `yaml:"provider" json:"provider"`
+}
+
+type SMS struct {
+	Enabled     bool   `yaml:"enabled" json:"enabled"`
+	RunOnStart  bool   `yaml:"runOnStart" json:"runOnStart"`
+	Hour        int    `yaml:"hour" json:"hour"`
+	Minute      int    `yaml:"minute" json:"minute"`
+	Timezone    string `yaml:"timezone" json:"timezone"`
+	Region      string `yaml:"region" json:"region"`
+	Endpoint    string `yaml:"endpoint" json:"endpoint"`
+	SecretID    string `yaml:"secretID" json:"secretID"`
+	SecretKey   string `yaml:"secretKey" json:"secretKey"`
+	SDKAppID    string `yaml:"sdkAppID" json:"sdkAppID"`
+	SignName    string `yaml:"signName" json:"signName"`
+	TemplateID  string `yaml:"templateID" json:"templateID"`
+	CountryCode string `yaml:"countryCode" json:"countryCode"`
+	MaxRetries  int    `yaml:"maxRetries" json:"maxRetries"`
+	RetryDelay  int    `yaml:"retryDelay" json:"retryDelay"`
+	TaskTimeout int    `yaml:"taskTimeout" json:"taskTimeout"`
 }

@@ -35,6 +35,7 @@ type LoanDao interface {
 	UpdateByTx(ctx context.Context, tx *gorm.DB, table *model.Loan) error
 	GetByMobileAndCode(ctx context.Context, mobile string, code string) (*model.Loan, error)
 	CreatePaymentHistory(ctx context.Context, table *model.PaymentHistory) error
+	GetPaymentHistoryByTradeNo(ctx context.Context, tradeNo string) (*model.PaymentHistory, error)
 	UpdatePaymentStatusByTradeNo(ctx context.Context, tradeNo string, status string) error
 	getPaymentHistory(ctx context.Context, mobile string) ([]*model.PaymentHistory, error)
 }
@@ -306,7 +307,6 @@ func (d *loanDao) GetByMobileAndCode(ctx context.Context, mobile string, code st
 	}
 	loanRecord.PaidCount = paidSuccessLength
 
-	overdueDays := 0
 	var lastPayDate time.Time
 	// 解析还款日期
 	returnDateInt, err := strconv.Atoi(loanRecord.LoanReturnDate)
@@ -315,64 +315,32 @@ func (d *loanDao) GetByMobileAndCode(ctx context.Context, mobile string, code st
 		return nil, err
 	}
 
-	// 获取每月固定还款日
 	dueDay := returnDateInt
 	now := time.Now()
-
+	if loanRecord.CreateAt == nil {
+		return nil, errors.New("loan create time is nil")
+	}
 	if paidSuccessLength > 0 {
 		lastPayRecord := paymentHistoryRecords[paidSuccessLength-1]
 		if lastPayRecord.CreateAt == nil {
-			logger.Errorf("lastPayRecord.CreateAt is nil for mobile: %s", mobile)
 			return nil, errors.New("last payment record create time is nil")
 		}
 		lastPayDate = *lastPayRecord.CreateAt
-
-		// 计算逾期天数：从应还款日（还款月的dueDay）到最后一次还款日期
-		overdueDays, err = calculateCurrentOverdueDays(lastPayDate, dueDay)
-		if err != nil {
-			logger.Errorf("calculate overdue days failed, mobile: %s, err: %v", mobile, err)
-			return nil, err
-		}
-	} else {
-		// 从未还款：计算从最近一个应还款日到当前日期的逾期天数
-		overdueDays, err = calculateCurrentOverdueDays(now, dueDay)
-		if err != nil {
-			logger.Errorf("calculate overdue days failed, mobile: %s, err: %v", mobile, err)
-			return nil, err
-		}
 	}
 
-	// 计算当月应还款日
-	shouldPayDate, err := getValidDueDate(now.Year(), now.Month(), dueDay)
+	// 首期还款日取注册日期之后最近的还款日；每成功支付一期，顺延一个月。
+	shouldPayDate, err := calculateNextPaymentDueDate(*loanRecord.CreateAt, paidSuccessLength, dueDay)
 	if err != nil {
-		logger.Errorf("get valid due date failed, year: %d, month: %d, day: %d, err: %v", now.Year(), now.Month(), dueDay, err)
+		logger.Errorf("calculate next payment due date failed, mobile: %s, err: %v", mobile, err)
 		return nil, err
 	}
 	loanRecord.ShouldPayDate = shouldPayDate
 	loanRecord.LastPayDate = lastPayDate
 
-	// 判断是否逾期
-	isOverdue := false
-	if paidSuccessLength > 0 {
-		// 有还款记录：判断最后一次还款是否晚于对应还款周期的应还款日
-		// 计算最后一次还款所在月的应还款日
-		payMonthDueDate, err := getValidDueDate(lastPayDate.Year(), lastPayDate.Month(), dueDay)
-		if err != nil {
-			return nil, err
-		}
-		isOverdue = lastPayDate.After(payMonthDueDate)
-	} else {
-		// 无还款记录：判断当前日期是否晚于当月应还款日
-		isOverdue = now.After(shouldPayDate)
-	}
-
-	if isOverdue {
-		loanRecord.OverDueDays = overdueDays
-		loanRecord.OverDueMoney = overdueDays * 100
-	} else {
-		// 未逾期则清空逾期相关字段
-		loanRecord.OverDueDays = 0
-		loanRecord.OverDueMoney = 0
+	nowDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
+	if nowDate.After(shouldPayDate) {
+		loanRecord.OverDueDays = int(nowDate.Sub(shouldPayDate).Hours() / 24)
+		loanRecord.OverDueMoney = loanRecord.OverDueDays * 100
 	}
 
 	return loanRecord, nil
@@ -395,103 +363,51 @@ func getLastDayOfMonth(year int, month time.Month) int {
 	return time.Date(year, month+1, 0, 0, 0, 0, 0, time.Local).Day()
 }
 
-// calculateCurrentOverdueDays 计算【当前】整体逾期天数（核心解决你的问题）
-// dueDay：每月固定还款日（比如27）
-// lastPayDate：最后一次还款日期（用于判断该算哪一期的应还款日）
-func calculateCurrentOverdueDays(lastPayDate time.Time, dueDay int) (int, error) {
-	now := time.Now() // 今天：2026-02-14
-	var latestDueDate time.Time
-
-	// ========== 场景1：无还款记录（lastPayDate 是零值） ==========
-	if lastPayDate.IsZero() {
-		// 从未还款：最近一期应还款日 = 上个月的dueDay（比如2月→1月27日）
-		lastMonth := now.Month() - 1
-		lastYear := now.Year()
-		if lastMonth < 1 {
-			lastMonth = 12
-			lastYear -= 1
-		}
-		var err error
-		latestDueDate, err = getValidDueDate(lastYear, lastMonth, dueDay)
-		if err != nil {
-			return 0, err
-		}
-		// ========== 场景2：有还款记录 ==========
-	} else {
-		// 1. 先算「最后还款月」的应还款日
-		payYear, payMonth := lastPayDate.Year(), lastPayDate.Month()
-		payMonthDueDate, err := getValidDueDate(payYear, payMonth, dueDay)
-		if err != nil {
-			return 0, err
-		}
-
-		// 2. 判断最后还款是否晚于「还款月的应还款日」
-		if lastPayDate.After(payMonthDueDate) {
-			// 例子：lastPayDate=12.29 > 12.27 → 最近一期应还款日=1.27
-			nextMonth := payMonth + 1
-			nextYear := payYear
-			if nextMonth > 12 {
-				nextMonth = 1
-				nextYear += 1
-			}
-			latestDueDate, err = getValidDueDate(nextYear, nextMonth, dueDay)
-		} else {
-			// 还款在应还款日之前 → 最近一期就是还款月的应还款日
-			latestDueDate = payMonthDueDate
-		}
+func calculateNextPaymentDueDate(createAt time.Time, paidCount int, dueDay int) (time.Time, error) {
+	if dueDay < 1 || dueDay > 31 {
+		return time.Time{}, errors.New("payment due day must be between 1 and 31")
+	}
+	if paidCount < 0 {
+		return time.Time{}, errors.New("paid count cannot be negative")
 	}
 
-	// 第二步：如果当前时间没到最近一期应还款日 → 0天逾期
-	if now.Before(latestDueDate) {
-		return 0, nil
-	}
-
-	// 第三步：计算当前逾期天数（精确到天）
-	diff := now.Sub(latestDueDate)
-	overdueDays := int(diff.Hours() / 24)
-
-	return overdueDays, nil
-}
-
-// calculateOverdueDaysNoPayment 计算无还款记录时的逾期天数
-// now: 当前日期
-// dueDay: 每月固定还款日
-func calculateOverdueDaysNoPayment(now time.Time, dueDay int) (int, error) {
-	// 计算当月应还款日
-	dueDate, err := getValidDueDate(now.Year(), now.Month(), dueDay)
+	createDate := time.Date(createAt.Year(), createAt.Month(), createAt.Day(), 0, 0, 0, 0, time.Local)
+	firstDueDate, err := getValidDueDate(createAt.Year(), createAt.Month(), dueDay)
 	if err != nil {
-		return 0, err
+		return time.Time{}, err
+	}
+	monthOffset := 0
+	if !createDate.Before(firstDueDate) {
+		monthOffset = 1
 	}
 
-	// 如果当前日期在应还款日之前/当天，没有逾期
-	if !now.After(dueDate) {
-		return 0, nil
-	}
-
-	// 计算逾期天数
-	diff := now.Sub(dueDate)
-	overdueDays := int(diff.Hours() / 24)
-
-	return overdueDays, nil
+	dueMonth := time.Date(createAt.Year(), createAt.Month()+time.Month(monthOffset+paidCount), 1, 0, 0, 0, 0, time.Local)
+	return getValidDueDate(dueMonth.Year(), dueMonth.Month(), dueDay)
 }
 
 // getPaymentHistory 查询支付成功的历史记录
 func (d *loanDao) getPaymentHistory(ctx context.Context, mobile string) ([]*model.PaymentHistory, error) {
 	var paymentHistoryRecords []*model.PaymentHistory
-	if err := d.db.Model(&model.PaymentHistory{}).WithContext(ctx).Where("user_phone = ? AND status = 'SUCCESS'", mobile).Find(&paymentHistoryRecords).Error; err != nil {
+	if err := d.db.WithContext(ctx).Where("user_phone = ? AND status = 'SUCCESS'", mobile).Order("create_at ASC").Find(&paymentHistoryRecords).Error; err != nil {
 		return nil, err
 	}
 	return paymentHistoryRecords, nil
 }
 
 func (d *loanDao) CreatePaymentHistory(ctx context.Context, table *model.PaymentHistory) error {
-	return d.db.Model(&model.PaymentHistory{}).Create(table).Error
+	return d.db.WithContext(ctx).Create(table).Error
+}
+
+func (d *loanDao) GetPaymentHistoryByTradeNo(ctx context.Context, tradeNo string) (*model.PaymentHistory, error) {
+	record := &model.PaymentHistory{}
+	err := d.db.WithContext(ctx).Where("out_trade_no = ?", tradeNo).First(record).Error
+	return record, err
 }
 
 func (d *loanDao) UpdatePaymentStatusByTradeNo(ctx context.Context, tradeNo string, status string) error {
 	maxRetries := 3
 	for i := 0; i < maxRetries; i++ {
-		err := d.db.Model(&model.PaymentHistory{}).Where("out_trade_no = ?", tradeNo).Update("status", status).Error
+		err := d.db.WithContext(ctx).Model(&model.PaymentHistory{}).Where("out_trade_no = ?", tradeNo).Update("status", status).Error
 		if err == nil {
 			return nil
 		}

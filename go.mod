@@ -7,10 +7,14 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-dev-frame/sponge v1.12.3
 	github.com/jinzhu/copier v0.3.5
+	github.com/smartwalle/alipay/v3 v3.2.25
 	github.com/stretchr/testify v1.9.0
 	github.com/swaggo/files v0.0.0-20220728132757-551d4a08d97a
 	github.com/swaggo/gin-swagger v1.5.2
 	github.com/swaggo/swag v1.8.12
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.157
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms v1.3.155
+	github.com/wechatpay-apiv3/wechatpay-go v0.2.20
 	golang.org/x/sync v0.10.0
 	gorm.io/gorm v1.25.5
 
@@ -86,7 +90,6 @@ require (
 	github.com/redis/go-redis/v9 v9.7.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.8 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
-	github.com/smartwalle/alipay/v3 v3.2.25 // indirect
 	github.com/smartwalle/ncrypto v1.0.4 // indirect
 	github.com/smartwalle/ngx v1.0.9 // indirect
 	github.com/smartwalle/nsign v1.0.9 // indirect
@@ -103,7 +106,6 @@ require (
 	github.com/uptrace/opentelemetry-go-extra/otelgorm v0.2.3 // indirect
 	github.com/uptrace/opentelemetry-go-extra/otelsql v0.2.3 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
-	github.com/wechatpay-apiv3/wechatpay-go v0.2.20 // indirect
 	github.com/yuin/gopher-lua v0.0.0-20210529063254-f4c35e4016d9 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opentelemetry.io/contrib v1.24.0 // indirect

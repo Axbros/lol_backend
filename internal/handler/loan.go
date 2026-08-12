@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -50,6 +52,10 @@ type LoanHandler interface {
 	GetDetail(c *gin.Context)
 	Pay(c *gin.Context)
 	Notify(c *gin.Context)
+	XPayAlipay(c *gin.Context)
+	XPayWechat(c *gin.Context)
+	XPayNotify(c *gin.Context)
+	PaymentMethods(c *gin.Context)
 }
 
 type loanHandler struct {
@@ -300,6 +306,26 @@ func (h *loanHandler) Pay(c *gin.Context) {
 		response.Error(c, ecode.InvalidParams)
 		return
 	}
+	channel, xpayType, xpayHistoryMethod, directProvider, ok := paymentChannel(form.Method)
+	if !ok {
+		response.Error(c, ecode.InvalidParams)
+		return
+	}
+	form.Method = strings.ToLower(strings.TrimSpace(form.Method))
+	if !channel.Enabled {
+		response.Error(c, ecode.ErrPaymentDisabled)
+		return
+	}
+	provider := strings.ToLower(strings.TrimSpace(channel.Provider))
+	if provider == "xpay" {
+		h.xPay(c, form, xpayType, xpayHistoryMethod)
+		return
+	}
+	if provider != directProvider {
+		logger.Error("invalid payment provider", logger.String("method", form.Method), logger.String("provider", channel.Provider))
+		response.Output(c, ecode.InternalServerError.ToHTTPCode())
+		return
+	}
 	ctx := middleware.WrapCtx(c)
 	loan, err := h.iDao.GetByMobileAndCode(ctx, form.Mobile, form.Code)
 	if err != nil {
@@ -364,6 +390,202 @@ func (h *loanHandler) Pay(c *gin.Context) {
 		"url":    url,
 		"amount": money,
 	})
+}
+
+// XPayAlipay creates an XPay Alipay page-payment order.
+func (h *loanHandler) XPayAlipay(c *gin.Context) {
+	channel := config.Get().Payment.Alipay
+	if !channel.Enabled || !strings.EqualFold(channel.Provider, "xpay") {
+		response.Error(c, ecode.ErrPaymentDisabled)
+		return
+	}
+	form, ok := bindPayRequest(c)
+	if !ok {
+		return
+	}
+	h.xPay(c, form, "alipay", "xpay_alipay")
+}
+
+// XPayWechat creates an XPay WeChat page-payment order.
+func (h *loanHandler) XPayWechat(c *gin.Context) {
+	channel := config.Get().Payment.Wechat
+	if !channel.Enabled || !strings.EqualFold(channel.Provider, "xpay") {
+		response.Error(c, ecode.ErrPaymentDisabled)
+		return
+	}
+	form, ok := bindPayRequest(c)
+	if !ok {
+		return
+	}
+	h.xPay(c, form, "wxpay", "xpay_wechat")
+}
+
+// PaymentMethods returns the payment methods currently enabled by configuration.
+func (h *loanHandler) PaymentMethods(c *gin.Context) {
+	paymentConfig := config.Get().Payment
+	response.Success(c, gin.H{
+		"alipay": paymentConfig.Alipay.Enabled,
+		"wechat": paymentConfig.Wechat.Enabled,
+	})
+}
+
+func bindPayRequest(c *gin.Context) (*types.PayRequest, bool) {
+	form := &types.PayRequest{}
+	if err := c.ShouldBindJSON(form); err != nil {
+		logger.Warn("ShouldBindJSON error: ", logger.Err(err), middleware.GCtxRequestIDField(c))
+		response.Error(c, ecode.InvalidParams)
+		return nil, false
+	}
+	return form, true
+}
+
+func paymentChannel(method string) (config.PaymentChannel, string, string, string, bool) {
+	switch strings.ToLower(strings.TrimSpace(method)) {
+	case "alipay":
+		return config.Get().Payment.Alipay, "alipay", "xpay_alipay", "alipay", true
+	case "wechat":
+		return config.Get().Payment.Wechat, "wxpay", "xpay_wechat", "wechatpay", true
+	default:
+		return config.PaymentChannel{}, "", "", "", false
+	}
+}
+
+func (h *loanHandler) xPay(c *gin.Context, form *types.PayRequest, payType string, historyMethod string) {
+	ctx := middleware.WrapCtx(c)
+	loan, err := h.iDao.GetByMobileAndCode(ctx, form.Mobile, form.Code)
+	if err != nil {
+		response.Error(c, ecode.ErrListLoan)
+		return
+	}
+	if loan.Status == 1 {
+		response.Error(c, ecode.ErrLoanStatus)
+		return
+	}
+
+	baseMoney := loan.MonthlyPayment + float64(loan.OverDueMoney)
+	totalMoney := baseMoney + baseMoney*(6.0/1000)
+	money := fmt.Sprintf("%.2f", totalMoney)
+	extInfo := ""
+	if loan.OverDueMoney > 0 {
+		extInfo = "（逾期费用：" + strconv.Itoa(loan.OverDueMoney) + "元）"
+	}
+	subject := loan.Name + "支付【" + loan.CarModel + "】月租" + money + "元" + extInfo
+	tradeNo := generateTradeNo()
+
+	xpayConfig := config.Get().XPay
+	notifyURL, err := buildXPayNotifyURL(xpayConfig.Host)
+	if err != nil {
+		logger.Error("invalid xpay host", logger.Err(err), middleware.GCtxRequestIDField(c))
+		response.Output(c, ecode.InternalServerError.ToHTTPCode())
+		return
+	}
+	returnURL := xpayConfig.ReturnURL
+	if returnURL == "" {
+		returnURL = config.Get().Alipay.ReturnURL
+	}
+	xpayParams := map[string]string{
+		"pid":          xpayConfig.MerchantID,
+		"type":         payType,
+		"out_trade_no": tradeNo,
+		"notify_url":   notifyURL,
+		"return_url":   returnURL,
+		"name":         subject,
+		"money":        money,
+		"sitename":     config.Get().App.Name,
+		"clientip":     c.ClientIP(),
+	}
+
+	now := time.Now()
+	if err = h.iDao.CreatePaymentHistory(ctx, &model.PaymentHistory{
+		UserPhone:  form.Mobile,
+		OutTradeNo: tradeNo,
+		Status:     "",
+		BaseMoney:  loan.MonthlyPayment,
+		TotalMoney: totalMoney,
+		Method:     historyMethod,
+		CreateAt:   &now,
+	}); err != nil {
+		response.Error(c, ecode.ErrCreatePayment)
+		return
+	}
+
+	paymentURL, err := payment.CreateXPayMAPI(c.Request.Context(), xpayConfig.MAPIURL, xpayParams, xpayConfig.MerchantKey)
+	if err != nil {
+		logger.Error("create xpay MAPI payment failed", logger.Err(err), middleware.GCtxRequestIDField(c))
+		if updateErr := h.iDao.UpdatePaymentStatusByTradeNo(ctx, tradeNo, "FAILED"); updateErr != nil {
+			logger.Error("mark failed xpay order failed", logger.Err(updateErr), middleware.GCtxRequestIDField(c))
+		}
+		response.Output(c, ecode.InternalServerError.ToHTTPCode())
+		return
+	}
+
+	response.Success(c, gin.H{"url": paymentURL, "amount": money})
+}
+
+func buildXPayNotifyURL(host string) (string, error) {
+	host = strings.TrimSpace(host)
+	if host == "" || (!strings.HasPrefix(host, "http://") && !strings.HasPrefix(host, "https://")) {
+		return "", errors.New("xpay host must be an absolute HTTP(S) URL")
+	}
+	return strings.TrimRight(host, "/") + "/api/v1/loan/xpay/notify", nil
+}
+
+// XPayNotify verifies and applies XPay's asynchronous payment notification.
+func (h *loanHandler) XPayNotify(c *gin.Context) {
+	if err := c.Request.ParseForm(); err != nil {
+		c.String(http.StatusBadRequest, "fail")
+		return
+	}
+	params := make(map[string]string, len(c.Request.Form))
+	for key := range c.Request.Form {
+		params[key] = c.Request.Form.Get(key)
+	}
+
+	xpayConfig := config.Get().XPay
+	if xpayConfig.MerchantID == "" || xpayConfig.MerchantKey == "" {
+		c.String(http.StatusInternalServerError, "fail")
+		return
+	}
+	if params["pid"] != xpayConfig.MerchantID || !strings.EqualFold(params["sign_type"], payment.XPaySignType) {
+		c.String(http.StatusBadRequest, "fail")
+		return
+	}
+	if err := payment.VerifyXPaySignature(params, xpayConfig.MerchantKey); err != nil {
+		logger.Warn("xpay callback signature verification failed", middleware.GCtxRequestIDField(c))
+		c.String(http.StatusBadRequest, "fail")
+		return
+	}
+	if params["trade_status"] != "TRADE_SUCCESS" || params["out_trade_no"] == "" {
+		c.String(http.StatusBadRequest, "fail")
+		return
+	}
+
+	ctx := middleware.WrapCtx(c)
+	history, err := h.iDao.GetPaymentHistoryByTradeNo(ctx, params["out_trade_no"])
+	if err != nil {
+		logger.Warn("xpay callback order not found", logger.Err(err), middleware.GCtxRequestIDField(c))
+		c.String(http.StatusBadRequest, "fail")
+		return
+	}
+	expectedMethod := map[string]string{"alipay": "xpay_alipay", "wxpay": "xpay_wechat"}[params["type"]]
+	if expectedMethod == "" || history.Method != expectedMethod {
+		logger.Warn("xpay callback payment type mismatch", middleware.GCtxRequestIDField(c))
+		c.String(http.StatusBadRequest, "fail")
+		return
+	}
+	callbackAmount, err := strconv.ParseFloat(params["money"], 64)
+	if err != nil || math.Round(callbackAmount*100) != math.Round(history.TotalMoney*100) {
+		logger.Warn("xpay callback amount mismatch", middleware.GCtxRequestIDField(c))
+		c.String(http.StatusBadRequest, "fail")
+		return
+	}
+
+	if err := h.iDao.UpdatePaymentStatusByTradeNo(ctx, params["out_trade_no"], "SUCCESS"); err != nil {
+		logger.Error("update xpay order status failed", logger.Err(err), middleware.GCtxRequestIDField(c))
+		c.String(http.StatusInternalServerError, "fail")
+		return
+	}
+	c.String(http.StatusOK, "success")
 }
 
 func (h *loanHandler) Notify(c *gin.Context) {
@@ -596,5 +818,6 @@ func CloseOrder(wechatClient *core.Client, outTradeNo string, ctx context.Contex
 }
 
 func generateTradeNo() string {
-	return time.Now().Format("20060102150405")
+	now := time.Now()
+	return now.Format("20060102150405") + fmt.Sprintf("%06d", now.Nanosecond()/1000)
 }
