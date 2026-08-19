@@ -328,8 +328,9 @@ func (d *loanDao) GetByMobileAndCode(ctx context.Context, mobile string, code st
 		lastPayDate = *lastPayRecord.CreateAt
 	}
 
-	// 首期还款日取注册日期之后最近的还款日；每成功支付一期，顺延一个月。
-	shouldPayDate, err := calculateNextPaymentDueDate(*loanRecord.CreateAt, paidSuccessLength, dueDay)
+	// 从未还款的用户按注册时间计算首期；已还款用户按最近一次成功还款时间计算下一期。
+	// 不能使用“注册时间 + 成功记录条数”，否则老用户历史记录不完整时会整月多算逾期。
+	shouldPayDate, err := calculateNextPaymentDueDate(*loanRecord.CreateAt, lastPayDate, dueDay)
 	if err != nil {
 		logger.Errorf("calculate next payment due date failed, mobile: %s, err: %v", mobile, err)
 		return nil, err
@@ -363,12 +364,15 @@ func getLastDayOfMonth(year int, month time.Month) int {
 	return time.Date(year, month+1, 0, 0, 0, 0, 0, time.Local).Day()
 }
 
-func calculateNextPaymentDueDate(createAt time.Time, paidCount int, dueDay int) (time.Time, error) {
+func calculateNextPaymentDueDate(createAt time.Time, lastPayDate time.Time, dueDay int) (time.Time, error) {
 	if dueDay < 1 || dueDay > 31 {
 		return time.Time{}, errors.New("payment due day must be between 1 and 31")
 	}
-	if paidCount < 0 {
-		return time.Time{}, errors.New("paid count cannot be negative")
+
+	// 支付历史可能没有完整迁移，因此有成功还款记录时只以最近一次成功还款为基准。
+	if !lastPayDate.IsZero() {
+		nextDueMonth := time.Date(lastPayDate.Year(), lastPayDate.Month()+1, 1, 0, 0, 0, 0, time.Local)
+		return getValidDueDate(nextDueMonth.Year(), nextDueMonth.Month(), dueDay)
 	}
 
 	createDate := time.Date(createAt.Year(), createAt.Month(), createAt.Day(), 0, 0, 0, 0, time.Local)
@@ -381,7 +385,7 @@ func calculateNextPaymentDueDate(createAt time.Time, paidCount int, dueDay int) 
 		monthOffset = 1
 	}
 
-	dueMonth := time.Date(createAt.Year(), createAt.Month()+time.Month(monthOffset+paidCount), 1, 0, 0, 0, 0, time.Local)
+	dueMonth := time.Date(createAt.Year(), createAt.Month()+time.Month(monthOffset), 1, 0, 0, 0, 0, time.Local)
 	return getValidDueDate(dueMonth.Year(), dueMonth.Month(), dueDay)
 }
 
