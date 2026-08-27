@@ -14,7 +14,7 @@ func Init(configFile string, fs ...func()) error {
 }
 
 func Show(hiddenFields ...string) string {
-	hiddenFields = append(hiddenFields, `"merchantKey"`, `"secretID"`, `"secretKey"`)
+	hiddenFields = append(hiddenFields, `"merchantKey"`, `"secretID"`, `"secretKey"`, `"appSecret"`)
 	return conf.Show(config, hiddenFields...)
 }
 
@@ -188,11 +188,13 @@ type Alipay struct {
 
 type WechatPay struct {
 	AppID                      string `yaml:"appID" json:"appID"`
+	AppSecret                  string `yaml:"appSecret" json:"appSecret"`
 	MchID                      string `yaml:"mchID" json:"mchID"`
 	MchCertificateSerialNumber string `yaml:"mchCertificateSerialNumber" json:"mchCertificateSerialNumber"`
 	MchPrivateKeyPath          string `yaml:"mchPrivateKeyPath" json:"mchPrivateKeyPath"`
 	MchAPIv3Key                string `yaml:"mchAPIv3Key" json:"mchAPIv3Key"`
 	NotifyURL                  string `yaml:"notifyUrl" json:"notifyUrl"`
+	OAuthRedirectURL           string `yaml:"oauthRedirectUrl" json:"oauthRedirectUrl"`
 }
 
 type XPay struct {

@@ -75,11 +75,15 @@ alipay:
 
 wechatPay:
   appId: wxbdbe0d51387a99d1
+  # 微信公众号 AppSecret，用于 snsapi_base 网页授权换取 openid
+  appSecret: ""
   mchId: 1679562034
   mchCertificateSerialNumber: 22EF934CAE4EA6E1E11F83FC7C427092636A2D63
   mchAPIv3Key: AFB53C1D06E10F169EA7A1E2E027CA99
   mchPrivateKeyPath: /cert/apiclient_key.pem
   notifyUrl: http://test.fzlol.xyz/api/v1/loan/wechat/notify
+  # 必须位于微信公众号“网页授权域名”下，建议填写前端支付页面完整地址
+  oauthRedirectUrl: "https://test.fzlol.xyz/pay/"
 
 payment:
   # 支付宝渠道可选：xpay、alipay

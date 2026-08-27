@@ -2,11 +2,14 @@ package handler
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
 	"math"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -30,6 +33,11 @@ import (
 	"github.com/go-dev-frame/sponge/pkg/logger"
 	"github.com/go-dev-frame/sponge/pkg/utils"
 	"github.com/wechatpay-apiv3/wechatpay-go/core"
+	"github.com/wechatpay-apiv3/wechatpay-go/core/auth/verifiers"
+	"github.com/wechatpay-apiv3/wechatpay-go/core/downloader"
+	wechatnotify "github.com/wechatpay-apiv3/wechatpay-go/core/notify"
+	wechatpayments "github.com/wechatpay-apiv3/wechatpay-go/services/payments"
+	"github.com/wechatpay-apiv3/wechatpay-go/services/payments/jsapi"
 	"github.com/wechatpay-apiv3/wechatpay-go/services/payments/native"
 )
 
@@ -52,10 +60,12 @@ type LoanHandler interface {
 	GetDetail(c *gin.Context)
 	Pay(c *gin.Context)
 	Notify(c *gin.Context)
+	WechatNotify(c *gin.Context)
 	XPayAlipay(c *gin.Context)
 	XPayWechat(c *gin.Context)
 	XPayNotify(c *gin.Context)
 	PaymentMethods(c *gin.Context)
+	WechatOAuthURL(c *gin.Context)
 }
 
 type loanHandler struct {
@@ -352,13 +362,32 @@ func (h *loanHandler) Pay(c *gin.Context) {
 	}
 	subject = loan.Name + "支付【" + loan.CarModel + "】月租" + money + "元" + extInfo
 
-	var url string
+	var paymentURL string
+	var jsapiPayment *jsapi.PrepayWithRequestPaymentResponse
 	tradeNo := generateTradeNo()
 	if form.Method == "alipay" {
 		//支付寶
-		url = WapAlipay(h.alipay, subject, money, tradeNo)
+		paymentURL = WapAlipay(h.alipay, subject, money, tradeNo)
 	} else {
-		url = WechatNativePay(h.wechatPay, subject, totalMoney, tradeNo)
+		if strings.TrimSpace(form.WechatCode) != "" {
+			wechatConfig := config.Get().WechatPay
+			openID, oauthErr := payment.ExchangeWechatOAuthCode(
+				c.Request.Context(), wechatConfig.AppID, wechatConfig.AppSecret, form.WechatCode,
+			)
+			if oauthErr != nil {
+				logger.Error("exchange wechat oauth code failed", logger.Err(oauthErr), middleware.GCtxRequestIDField(c))
+				response.Output(c, ecode.InternalServerError.ToHTTPCode())
+				return
+			}
+			jsapiPayment, err = WechatJSAPIPay(c.Request.Context(), h.wechatPay, subject, totalMoney, tradeNo, openID)
+			if err != nil {
+				logger.Error("create wechat jsapi payment failed", logger.Err(err), middleware.GCtxRequestIDField(c))
+				response.Output(c, ecode.InternalServerError.ToHTTPCode())
+				return
+			}
+		} else {
+			paymentURL = WechatNativePay(h.wechatPay, subject, totalMoney, tradeNo)
+		}
 		ctxForTracking, c := context.WithTimeout(context.Background(), 10*time.Minute)
 		cancel = c
 		go func() {
@@ -386,10 +415,12 @@ func (h *loanHandler) Pay(c *gin.Context) {
 		response.Error(c, ecode.ErrCreatePayment)
 		return
 	}
-	response.Success(c, gin.H{
-		"url":    url,
-		"amount": money,
-	})
+	data := gin.H{"url": paymentURL, "amount": money, "paymentType": "url"}
+	if jsapiPayment != nil {
+		data["paymentType"] = "jsapi"
+		data["jsapi"] = jsapiPayment
+	}
+	response.Success(c, data)
 }
 
 // XPayAlipay creates an XPay Alipay page-payment order.
@@ -426,6 +457,45 @@ func (h *loanHandler) PaymentMethods(c *gin.Context) {
 	response.Success(c, gin.H{
 		"alipay": paymentConfig.Alipay.Enabled,
 		"wechat": paymentConfig.Wechat.Enabled,
+	})
+}
+
+// WechatOAuthURL returns the snsapi_base authorization URL used to obtain an openid for JSAPI payment.
+func (h *loanHandler) WechatOAuthURL(c *gin.Context) {
+	channel := config.Get().Payment.Wechat
+	wechatConfig := config.Get().WechatPay
+	if !channel.Enabled || !strings.EqualFold(strings.TrimSpace(channel.Provider), "wechatPay") {
+		response.Error(c, ecode.ErrPaymentDisabled)
+		return
+	}
+	if strings.TrimSpace(wechatConfig.AppID) == "" || strings.TrimSpace(wechatConfig.AppSecret) == "" || strings.TrimSpace(wechatConfig.OAuthRedirectURL) == "" {
+		logger.Error("wechat jsapi oauth configuration is incomplete", middleware.GCtxRequestIDField(c))
+		response.Output(c, ecode.InternalServerError.ToHTTPCode())
+		return
+	}
+	redirectURL, err := url.Parse(wechatConfig.OAuthRedirectURL)
+	if err != nil || (redirectURL.Scheme != "http" && redirectURL.Scheme != "https") || redirectURL.Host == "" {
+		logger.Error("invalid wechat oauth redirect URL", middleware.GCtxRequestIDField(c))
+		response.Output(c, ecode.InternalServerError.ToHTTPCode())
+		return
+	}
+	stateBytes := make([]byte, 16)
+	if _, err = rand.Read(stateBytes); err != nil {
+		logger.Error("generate wechat oauth state failed", logger.Err(err), middleware.GCtxRequestIDField(c))
+		response.Output(c, ecode.InternalServerError.ToHTTPCode())
+		return
+	}
+	state := hex.EncodeToString(stateBytes)
+	query := url.Values{
+		"appid":         {wechatConfig.AppID},
+		"redirect_uri":  {redirectURL.String()},
+		"response_type": {"code"},
+		"scope":         {"snsapi_base"},
+		"state":         {state},
+	}
+	response.Success(c, gin.H{
+		"url":   "https://open.weixin.qq.com/connect/oauth2/authorize?" + query.Encode() + "#wechat_redirect",
+		"state": state,
 	})
 }
 
@@ -627,6 +697,56 @@ func (h *loanHandler) Notify(c *gin.Context) {
 	c.String(http.StatusOK, "success")
 }
 
+// WechatNotify verifies, decrypts and applies WeChat Pay API v3 transaction notifications.
+func (h *loanHandler) WechatNotify(c *gin.Context) {
+	wechatConfig := config.Get().WechatPay
+	certificateVisitor := downloader.MgrInstance().GetCertificateVisitor(wechatConfig.MchID)
+	notifyHandler, err := wechatnotify.NewRSANotifyHandler(
+		wechatConfig.MchAPIv3Key,
+		verifiers.NewSHA256WithRSAVerifier(certificateVisitor),
+	)
+	if err != nil {
+		logger.Error("initialize wechat payment notification handler failed", logger.Err(err), middleware.GCtxRequestIDField(c))
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "FAIL", "message": "notification configuration error"})
+		return
+	}
+	transaction := new(wechatpayments.Transaction)
+	if _, err = notifyHandler.ParseNotifyRequest(c.Request.Context(), c.Request, transaction); err != nil {
+		logger.Warn("parse wechat payment notification failed", logger.Err(err), middleware.GCtxRequestIDField(c))
+		c.JSON(http.StatusBadRequest, gin.H{"code": "FAIL", "message": "invalid notification"})
+		return
+	}
+	if transaction.OutTradeNo == nil || transaction.TradeState == nil || *transaction.TradeState != "SUCCESS" ||
+		transaction.Appid == nil || *transaction.Appid != wechatConfig.AppID ||
+		transaction.Mchid == nil || *transaction.Mchid != wechatConfig.MchID {
+		logger.Warn("wechat payment notification fields mismatch", middleware.GCtxRequestIDField(c))
+		c.JSON(http.StatusBadRequest, gin.H{"code": "FAIL", "message": "transaction mismatch"})
+		return
+	}
+
+	ctx := middleware.WrapCtx(c)
+	history, err := h.iDao.GetPaymentHistoryByTradeNo(ctx, *transaction.OutTradeNo)
+	if err != nil {
+		logger.Warn("wechat payment order not found", logger.Err(err), middleware.GCtxRequestIDField(c))
+		c.JSON(http.StatusBadRequest, gin.H{"code": "FAIL", "message": "order not found"})
+		return
+	}
+	if history.Method != "wechat" || transaction.Amount == nil || transaction.Amount.Total == nil ||
+		*transaction.Amount.Total != int64(math.Round(history.TotalMoney*100)) {
+		logger.Warn("wechat payment notification amount or method mismatch", middleware.GCtxRequestIDField(c))
+		c.JSON(http.StatusBadRequest, gin.H{"code": "FAIL", "message": "order mismatch"})
+		return
+	}
+	if history.Status != "SUCCESS" {
+		if err = h.iDao.UpdatePaymentStatusByTradeNo(ctx, *transaction.OutTradeNo, "SUCCESS"); err != nil {
+			logger.Error("update wechat payment status failed", logger.Err(err), middleware.GCtxRequestIDField(c))
+			c.JSON(http.StatusInternalServerError, gin.H{"code": "FAIL", "message": "update order failed"})
+			return
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{"code": "SUCCESS", "message": "成功"})
+}
+
 // 订单查询函数
 func queryWechatOrderStatus(ctx context.Context, client *core.Client, outTradeNo string) (bool, error) {
 	mchid := config.Get().WechatPay.MchID
@@ -791,6 +911,27 @@ func WechatNativePay(wechatClient *core.Client, subject string, totalAmount floa
 	}
 
 	return *resp.CodeUrl
+}
+
+func WechatJSAPIPay(ctx context.Context, wechatClient *core.Client, subject string, totalAmount float64, tradeNo, openID string) (*jsapi.PrepayWithRequestPaymentResponse, error) {
+	wechatConfig := config.Get().WechatPay
+	service := jsapi.JsapiApiService{Client: wechatClient}
+	resp, _, err := service.PrepayWithRequestPayment(ctx, jsapi.PrepayRequest{
+		Appid:       core.String(wechatConfig.AppID),
+		Mchid:       core.String(wechatConfig.MchID),
+		Description: core.String(subject),
+		OutTradeNo:  core.String(tradeNo),
+		GoodsTag:    core.String("用户偿还车款"),
+		NotifyUrl:   core.String(wechatConfig.NotifyURL),
+		Amount: &jsapi.Amount{
+			Total: core.Int64(int64(math.Round(totalAmount * 100))),
+		},
+		Payer: &jsapi.Payer{Openid: core.String(openID)},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 // 以下情况需要调用关单接口：

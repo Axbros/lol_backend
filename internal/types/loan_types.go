@@ -28,9 +28,10 @@ type GetDetailRequest struct {
 }
 
 type PayRequest struct {
-	Mobile string `json:"mobile" binding:""` // mobile id
-	Code   string `json:"code" binding:""`   // code
-	Method string `json:"method" binding:""` // method
+	Mobile     string `json:"mobile" binding:""`     // mobile id
+	Code       string `json:"code" binding:""`       // code
+	Method     string `json:"method" binding:""`     // method
+	WechatCode string `json:"wechatCode" binding:""` // 微信网页授权 code，仅 JSAPI 支付使用
 }
 
 // UpdateLoanByIDRequest request params
